@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedir a La Casa del Frito</title>
+<meta name="description" content="Haga su pedido a domicilio o para recoger en La Casa del Frito, León.">
+<meta name="theme-color" content="#3B2416">
+<!-- Vista previa del enlace en WhatsApp / Facebook (la imagen debe ir con dirección completa) -->
+<meta property="og:title" content="Ordene aquí · La Casa del Frito">
+<meta property="og:description" content="Chicharrón, frito y nacatamales. Pida a domicilio o para recoger en León.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lacasadelfrito.github.io/pedir/">
+<meta property="og:image" content="https://lacasadelfrito.github.io/iconos/ordene-aqui.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_NI">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="../iconos/icono-192.png">
+<link rel="apple-touch-icon" href="../iconos/icono-apple-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--cafe:#3B2416;--rojo:#C8372D;--naranja:#E2762B;--amarillo:#F2B33D;--crema:#F3E6C8;--papel:#FFFBF2;--verde:#4E7D1E;--gris:#7a6552;--borde:#e7d6b4}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--crema);color:var(--cafe);font-family:Nunito,Arial,sans-serif;font-size:16px;line-height:1.4;padding-bottom:110px}
+  button,input,textarea{font:inherit;color:inherit}
+  .oculto{display:none!important}
+  header{background:linear-gradient(180deg,var(--rojo) 0 70%,var(--naranja) 70% 85%,var(--amarillo) 85%);color:#fff;text-align:center;padding:18px 16px 26px}
+  header img{width:120px;height:120px;border-radius:20px;box-shadow:0 6px 18px #0004;background:var(--crema)}
+  header h1{font-family:Rye,Georgia,serif;font-weight:400;margin:8px 0 2px;font-size:26px}
+  header p{margin:0;font-weight:700;opacity:.95}
+  main{max-width:640px;margin:0 auto;padding:16px}
+  .info{background:var(--papel);border:2px solid var(--borde);border-radius:14px;padding:12px;font-size:14px;margin-bottom:14px}
+  .info b{display:inline-block;min-width:80px}
+  .aviso{background:#fff4d6;border-left:6px solid var(--amarillo);padding:10px 12px;border-radius:8px;margin:10px 0}
+  .cerrado{background:#fde2df;border-left-color:var(--rojo)}
+  h2{font-family:Rye,Georgia,serif;font-weight:400;font-size:20px;margin:18px 0 8px}
+  .prod{background:#fff;border:2px solid var(--borde);border-radius:14px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .prod.con{border-color:var(--naranja);background:#fff8f0}
+  .prod .nm{flex:1;min-width:0}
+  .prod .nm b{display:block}
+  .prod .nm span{color:var(--rojo);font-weight:800}
+  .cant{display:flex;align-items:center;gap:6px}
+  .cant button{width:38px;height:38px;border-radius:50%;border:2px solid var(--cafe);background:#fff;font-weight:800;font-size:18px;cursor:pointer}
+  .cant output{min-width:54px;text-align:center;font-weight:800}
+  .pie{position:fixed;left:0;right:0;bottom:0;background:var(--cafe);color:#fff;padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px #0004;z-index:5}
+  .pie .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .pie .t{flex:1}
+  .pie .t small{display:block;opacity:.8}
+  .boton{border:0;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer;background:var(--naranja);color:#fff;font-size:17px}
+  .boton:disabled{opacity:.5}
+  .boton.sec{background:#fff;color:var(--cafe);border:2px solid var(--cafe)}
+  .boton.wa{background:#25D366;color:#063;display:block;text-align:center;text-decoration:none;margin-top:10px}
+  label{display:block;font-weight:700;margin-bottom:10px;font-size:15px}
+  label small{display:block;font-weight:400;color:var(--gris)}
+  input.ent,textarea.ent{width:100%;padding:11px 12px;border:2px solid var(--borde);border-radius:10px;background:#fff;margin-top:4px}
+  input.ent:focus,textarea.ent:focus{outline:none;border-color:var(--naranja)}
+  .tarjeta{background:var(--papel);border:2px solid var(--borde);border-radius:16px;padding:14px;margin-bottom:12px}
+  .resumen div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--borde)}
+  .error{color:var(--rojo);font-weight:800;margin:8px 0}
+  .trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  .listo{text-align:center}
+  .listo .grande{font-size:56px}
+  footer{text-align:center;color:var(--gris);font-size:12px;padding:16px}
+  .opciones{display:flex;gap:8px;margin-bottom:12px}
+  .opciones button{flex:1 1 0;border:2px solid var(--borde);background:#fff;border-radius:12px;padding:12px 6px;font-weight:800;cursor:pointer;font-size:15px}
+  .opciones button.act{background:var(--naranja);border-color:var(--naranja);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <img src="../iconos/logo-240.jpg" width="120" height="120" alt="La Casa del Frito">
+  <h1 id="nombre">La Casa del Frito</h1>
+  <p id="lema">Tradición que sabe a Nicaragua</p>
+</header>
+<main>
+  <div id="cargando" class="info">Cargando el menú…</div>
+  <div id="paso1" class="oculto">
+    <div class="info"><div><b>🕒 Horario</b> <span id="horario"></span></div><div><b>📍 Estamos</b> <span id="direccion"></span></div>
+      <div><b>🛵 Envío</b> <span id="envio"></span></div></div>
+    <div id="aviso"></div>
+    <div id="menu"></div>
+  </div>
+  <div id="paso2" class="oculto">
+    <button class="boton sec" onclick="paso(1)" style="padding:8px 14px;font-size:15px">← Volver al menú</button>
+    <h2>Su pedido</h2>
+    <div class="tarjeta resumen" id="resumen"></div>
+    <h2 id="tit2">¿A dónde se lo llevamos?</h2>
+    <div class="opciones" id="opEnt"><button type="button" data-e="DOMICILIO" class="act">🛵 A domicilio</button><button type="button" data-e="RECOGE">🏠 Paso a recogerlo</button></div>
+    <div class="tarjeta">
+      <label>Su nombre<input class="ent" id="fN" maxlength="60" autocomplete="name"></label>
+      <label>Su WhatsApp <small>8 números; ahí le confirmamos</small><input class="ent" id="fT" inputmode="tel" maxlength="15" autocomplete="tel"></label>
+      <label id="fHc" class="oculto">¿A qué hora pasa? <small>opcional</small><input class="ent" id="fH" maxlength="30" placeholder="Ej.: a las 5 de la tarde"></label>
+      <div id="fDom">
+      <label>Dirección <small>barrio, de dónde, cuántas cuadras</small><input class="ent" id="fD" maxlength="160" autocomplete="street-address"></label>
+      <label>Señas <small>color de la casa, portón… (opcional)</small><input class="ent" id="fR" maxlength="120"></label>
+      <button class="boton sec" id="fUbi" type="button" style="width:100%;font-size:15px">📍 Mandar mi ubicación (opcional)</button>
+      <div id="ubiTxt" style="font-size:13px;color:#7a6552;margin:6px 0 10px"></div>
+      </div>
+      <label>Nota <small>opcional</small><textarea class="ent" id="fO" maxlength="120" rows="2" placeholder="Ej.: bien dorado, sin chile"></textarea></label>
+      <div class="trampa" aria-hidden="true"><label>Sitio web<input id="fS" tabindex="-1" autocomplete="off"></label></div>
+    </div>
+    <div class="error" id="error"></div>
+  </div>
+  <div id="paso3" class="oculto listo tarjeta">
+    <div class="grande">✅</div>
+    <h2 id="lsTit">¡Pedido recibido!</h2>
+    <p id="lsTxt"></p>
+    <a class="boton wa" id="lsWa" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>
+    <p style="font-size:14px;color:#7a6552">Le confirmamos el envío y el total por WhatsApp. Pague al recibir o por transferencia.</p>
+    <button class="boton sec" onclick="location.reload()">Hacer otro pedido</button>
+  </div>
+</main>
+<div class="pie oculto" id="pie"><div class="in"><div class="t"><b id="pieTot">C$ 0.00</b><small id="pieN">0 productos · más envío</small></div>
+  <button class="boton" id="pieBtn">Continuar ➜</button></div></div>
+<footer>La Casa del Frito · León, Nicaragua</footer>
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzHYVkThjM6wdyHPoR5MUnHCitB-EwkZ_Uz8JPGmG5yfWCiPulzqlGxZEDNSrknTq_Meg/exec';
+  const $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function dinero(n) { return 'C$ ' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function servidor(f, a) {
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ f: f, a: a || [], directo: true }) })
+      .then(function (r) { if (!r.ok) throw new Error('El servidor no respondió. Intente otra vez.'); return r.json(); })
+      .then(function (r) { if (!r.ok) throw new Error(r.e); return r.r; })
+      .catch(function (e) { throw new Error(/fetch|network|load failed/i.test(String(e.message)) ? 'No hay conexión. Revise su internet e intente otra vez.' : e.message); });
+  }
+  const guardado = function (k) { try { return localStorage.getItem('lcdf_pedir_' + k) || ''; } catch (e) { return ''; } };
+  const guardar = function (k, v) { try { localStorage.setItem('lcdf_pedir_' + k, v); } catch (e) { /* nada */ } };
+
+  let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO';
+  // El menú se guarda en el teléfono y se pinta de inmediato al abrir; por detrás se trae el actual (Apps Script tarda 1–3 s en frío).
+  const MENU_K = 'lcdf_pedir_menu';
+  let guardadoMenu = null;
+  try { guardadoMenu = JSON.parse(localStorage.getItem(MENU_K) || 'null'); } catch (e) { guardadoMenu = null; }
+  if (guardadoMenu && guardadoMenu.productos) pintarMenu(guardadoMenu);
+  servidor('menuPublico').then(function (m) {
+    const txt = JSON.stringify(m);
+    try { localStorage.setItem(MENU_K, txt); } catch (e) { /* nada */ }
+    if (!guardadoMenu || JSON.stringify(guardadoMenu) !== txt) pintarMenu(m);
+  }).catch(function (e) {
+    if (M) return;   // ya se ve el menú guardado; al enviar se sabrá si hay conexión
+    $('cargando').innerHTML = '<span class="error">' + esc(e.message) + '</span>';
+  });
+
+  function pintarMenu(m) {
+    M = m;
+    // Lo que ya eligió el cliente se conserva (si el producto sigue en el menú).
+    Object.keys(CANT).forEach(function (c) { if (!m.productos.some(function (p) { return p.codigo === c; })) delete CANT[c]; });
+    $('nombre').textContent = m.negocio; $('lema').textContent = m.lema;
+    $('horario').textContent = m.horario; $('direccion').textContent = m.direccion; $('envio').textContent = m.envio;
+    document.title = 'Pedir a ' + m.negocio;
+    $('aviso').innerHTML = (m.abierto ? '' : '<div class="aviso cerrado"><b>Ahora no estamos recibiendo pedidos por aquí.</b> Escríbanos por WhatsApp.</div>') +
+      (m.aviso ? '<div class="aviso">' + esc(m.aviso) + '</div>' : '');
+    const cats = {};
+    m.productos.forEach(function (p) { (cats[p.categoria || 'Menú'] = cats[p.categoria || 'Menú'] || []).push(p); });
+    $('menu').innerHTML = Object.keys(cats).map(function (c) {
+      return '<h2>' + esc(c) + '</h2>' + cats[c].map(function (p) {
+        return '<div class="prod" id="p_' + esc(p.codigo) + '"><div class="nm"><b>' + esc(p.nombre) + '</b><span>' + dinero(p.precio) + (p.unidad === 'unidad' ? '' : ' la ' + (p.unidad === 'lb' ? 'libra' : esc(p.unidad))) + '</span></div>' +
+          '<div class="cant"><button data-m="' + esc(p.codigo) + '" aria-label="Menos">−</button><output id="c_' + esc(p.codigo) + '">0</output><button data-s="' + esc(p.codigo) + '" aria-label="Más">＋</button></div></div>';
+      }).join('');
+    }).join('');
+    document.querySelectorAll('[data-s]').forEach(function (b) { b.onclick = function () { mover(b.dataset.s, 1); }; });
+    document.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { mover(b.dataset.m, -1); }; });
+    Object.keys(CANT).forEach(function (c) { mover(c, 0); });
+    $('cargando').classList.add('oculto');
+    if (PASO === 1) { $('paso1').classList.remove('oculto'); $('pie').classList.remove('oculto'); }
+    if (!$('fN').value) { $('fN').value = guardado('n'); $('fT').value = guardado('t'); $('fD').value = guardado('d'); $('fR').value = guardado('r'); }
+    pintarPie();
+  }
+  // A domicilio o "paso a recogerlo": al recoger no se pide dirección y se pregunta la hora.
+  document.querySelectorAll('#opEnt button').forEach(function (b) {
+    b.onclick = function () {
+      ENTREGA = b.dataset.e;
+      document.querySelectorAll('#opEnt button').forEach(function (x) { x.classList.toggle('act', x === b); });
+      const rec = ENTREGA === 'RECOGE';
+      $('fDom').classList.toggle('oculto', rec); $('fHc').classList.toggle('oculto', !rec);
+      $('tit2').textContent = rec ? 'Sus datos' : '¿A dónde se lo llevamos?';
+      paso(2);
+    };
+  });
+
+  function prod(c) { return M.productos.filter(function (p) { return p.codigo === c; })[0]; }
+  // Por libra se pide de media en media libra; lo demás, por unidad.
+  function paso_(p) { return p.unidad === 'lb' || p.fraccion ? 0.5 : 1; }
+  function mover(c, d) {
+    const p = prod(c), n = Math.max(0, Math.round(((CANT[c] || 0) + d * paso_(p)) * 100) / 100);
+    if (n > 50) return;
+    if (n) CANT[c] = n; else delete CANT[c];
+    $('c_' + c).textContent = n ? (paso_(p) < 1 ? n + ' lb' : n) : '0';
+    $('p_' + c).classList.toggle('con', !!n);
+    pintarPie();
+  }
+  function total() { return Object.keys(CANT).reduce(function (s, c) { return s + CANT[c] * prod(c).precio; }, 0); }
+  function pintarPie() {
+    const n = Object.keys(CANT).length;
+    $('pieTot').textContent = dinero(total());
+    $('pieN').textContent = n + ' producto' + (n === 1 ? '' : 's') + (ENTREGA === 'RECOGE' ? ' · para recoger' : ' · más envío');
+    $('pieBtn').textContent = PASO === 1 ? 'Continuar ➜' : '✅ Enviar pedido';
+    $('pieBtn').disabled = !n || !M.abierto;
+  }
+  function paso(n) {
+    PASO = n;
+    $('paso1').classList.toggle('oculto', n !== 1); $('paso2').classList.toggle('oculto', n !== 2);
+    if (n === 2) $('resumen').innerHTML = Object.keys(CANT).map(function (c) {
+      const p = prod(c);
+      return '<div><span>' + (paso_(p) < 1 ? CANT[c] + ' lb ' : CANT[c] + ' × ') + esc(p.nombre) + '</span><b>' + dinero(CANT[c] * p.precio) + '</b></div>';
+    }).join('') + (ENTREGA === 'RECOGE' ? '<div><span>Lo recoge</span><span>sin envío</span></div><div><b>Total</b><b>' + dinero(total()) + '</b></div>'
+      : '<div><span>Envío</span><span>se lo confirmamos</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div>');
+    if (PASO_ANTES !== n) window.scrollTo(0, 0);   // al cambiar entre domicilio y recoger no salta arriba
+    PASO_ANTES = n;
+    pintarPie();
+  }
+  $('pieBtn').onclick = function () { if (PASO === 1) paso(2); else enviar(); };
+  $('fUbi').onclick = function () {
+    if (!navigator.geolocation) { $('ubiTxt').textContent = 'Su teléfono no permite compartir la ubicación desde aquí.'; return; }
+    $('ubiTxt').textContent = 'Buscando su ubicación…';
+    navigator.geolocation.getCurrentPosition(function (p) {
+      UBI = 'https://www.google.com/maps?q=' + p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6);
+      $('ubiTxt').textContent = '✅ Ubicación lista (se manda con el pedido).';
+    }, function () { $('ubiTxt').textContent = 'No se pudo tomar la ubicación. Escriba bien la dirección.'; }, { enableHighAccuracy: true, timeout: 15000 });
+  };
+  function enviar() {
+    $('error').textContent = '';
+    const rec = ENTREGA === 'RECOGE';
+    const o = { nombre: $('fN').value.trim(), telefono: $('fT').value.trim(), direccion: rec ? '' : $('fD').value.trim(), referencia: rec ? '' : $('fR').value.trim(),
+      nota: $('fO').value.trim(), ubicacion: rec ? '' : UBI, sitio: $('fS').value, entrega: ENTREGA, hora_recoge: rec ? $('fH').value.trim() : '',
+      lineas: Object.keys(CANT).map(function (c) { return { codigo: c, cantidad: CANT[c] }; }) };
+    if (o.nombre.length < 2) return falta('Escriba su nombre.', 'fN');
+    if (o.telefono.replace(/\D/g, '').length < 8) return falta('Escriba su WhatsApp (8 números).', 'fT');
+    if (!rec && o.direccion.length < 6) return falta('Escriba su dirección.', 'fD');
+    $('pieBtn').disabled = true; $('pieBtn').textContent = 'Enviando…';
+    servidor('pedidoWeb', [o]).then(function (r) {
+      guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); }
+      $('paso2').classList.add('oculto'); $('pie').classList.add('oculto'); $('paso3').classList.remove('oculto');
+      $('lsTit').textContent = '¡Pedido D' + r.id + ' recibido!';
+      $('lsTxt').innerHTML = rec ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b>, para recoger' + (o.hora_recoge ? ' (' + esc(o.hora_recoge) + ')' : '') + '.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
+        : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.';
+      $('lsWa').href = 'https://wa.me/' + (r.whatsapp.length === 8 ? '505' + r.whatsapp : r.whatsapp) + '?text=' + encodeURIComponent(r.texto);
+      window.scrollTo(0, 0);
+    }).catch(function (e) { $('error').textContent = e.message; pintarPie(); });
+  }
+  function falta(t, id) { $('error').textContent = t; $(id).focus(); }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+</script>
+</body>
+</html>
