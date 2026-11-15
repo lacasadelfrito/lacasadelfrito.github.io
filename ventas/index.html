@@ -648,8 +648,9 @@
   const CLAVE_TOKEN = 'lcdf_token_' + PUERTA;   // cada puerta guarda su propia sesión
   let TOKEN = leerToken(), YO = null, MODULOS = [], USR = [], ROLES_USR = [], PUNTOS_USR = [];
   function usuarioDeEstaPuerta(u) {
-    if (PUERTA === 'ventas') return u.rol !== 'Superadmin';
-    if (PUERTA === 'sistema') return u.rol === 'Admin';
+    if (PUERTA === 'ventas') return ['Cajero', 'Despachador', 'Delivery'].indexOf(u.rol) !== -1;
+    if (PUERTA === 'sistema') return u.rol === 'Admin' || u.rol === 'Supervisor cocina';
+    if (PUERTA === 'admin') return u.rol === 'Superadmin';
     return true;
   }
   let elegido = null, pin = '', VISTA = 'inicio';
@@ -2673,7 +2674,10 @@
     horario: 'Horario de atención', formas_pago: 'Formas de pago', pie_comprobante: 'Pie del comprobante', envio_sugerido: 'Envío sugerido (C$)', descontar_insumos: 'Descontar insumos al producir',
     whatsapp_delivery: 'WhatsApp del celular del delivery', pedidos_web: 'Recibir pedidos por la página /pedir', aviso_pedidos: 'Aviso en la página de pedidos',
     texto_envio: 'Texto sobre el envío (página de pedidos)', pago_delivery: 'Pago al repartidor al cerrar la caja del delivery',
-    pago_delivery_monto: 'Pago fijo por entrega (C$) — solo si arriba eligió "Fijo"' };
+    pago_delivery_monto: 'Pago fijo por entrega (C$) — solo si arriba eligió "Fijo"',
+    zona_delivery: 'Zona del delivery (página de pedidos) — ej.: la ciudad de León',
+    dias_pedidos: 'Días en que se reciben pedidos por la página — ej.: sábado, domingo (o "todos")',
+    telefonos_bloqueados: 'Números bloqueados en la página de pedidos (pedidos falsos), separados por coma' };
   let NEGOCIO = [];
   function cargarNegocio() {
     $('formNegocio').innerHTML = '<div class="ayuda">Cargando…</div>';
@@ -2793,7 +2797,7 @@
       ctx.fillText(String(n.documento).toUpperCase() + ' N.º ' + v.numero, W / 2, y + 27);
       y += 46;
       izq('Fecha: ' + v.fecha_texto, 16);
-      izq('Atendió: ' + v.vendedor + ' · ' + v.canal, 16);
+      izq('Atendió: ' + v.vendedor + (v.cajero ? ' · Cajero: ' + v.cajero : '') + ' · ' + v.canal, 16);
       if (v.cliente) izq('Cliente: ' + v.cliente + (v.telefono ? ' · ' + v.telefono : ''), 16);
       if (v.direccion) izq('Entrega: ' + v.direccion, 16);
       y += 26; fila('Cant.', 'Producto', 'Total', 16, 'bold'); raya(2);
@@ -3280,7 +3284,7 @@
     $('dv-tablero').querySelectorAll('[data-cp]').forEach(function (b) { b.onclick = function () { verComprobante(b.dataset.cp); }; });
   }
   function tarjetaDel(p) {
-    const origen = (p.origen === 'WEB' ? '<span class="etq">🌐 Página</span> ' : p.origen === 'PEGADO' ? '<span class="etq gris">📋 Chat</span> ' : '') +
+    const origen = (p.origen === 'WEB' ? '<span class="etq">🌐 Página' + (p.estado === 'NUEVO' ? ' · sin confirmar' : '') + '</span> ' : p.origen === 'PEGADO' ? '<span class="etq gris">📋 Chat</span> ' : '') +
       (p.recoge ? '<span class="etq verde">🏠 Encargo · recoge</span> ' : '');
     const b = function (acc, txt, sec) { return '<button class="boton ' + (sec ? 'sec ' : '') + 'peq" data-acc="' + acc + '" data-id="' + p.id + '">' + txt + '</button>'; };
     // Para recoger: Nuevo → Preparando → "Lo recogió" (no sale en camino, no lleva repartidor).

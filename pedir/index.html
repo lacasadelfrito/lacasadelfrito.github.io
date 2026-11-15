@@ -80,8 +80,9 @@
 <main>
   <div id="cargando" class="info">Cargando el menú…</div>
   <div id="paso1" class="oculto">
-    <div class="info"><div><b>🕒 Horario</b> <span id="horario"></span></div><div><b>📍 Estamos</b> <span id="direccion"></span></div>
+    <div class="info"><div><b>🕒 Horario</b> <span id="horario"></span></div><div><b>📍 Dirección</b> <span id="direccion"></span></div>
       <div><b>🛵 Envío</b> <span id="envio"></span></div></div>
+    <div class="aviso" id="cobertura"></div>
     <div id="aviso"></div>
     <div id="menu"></div>
   </div>
@@ -100,6 +101,7 @@
       <label>Señas <small>color de la casa, portón… (opcional)</small><input class="ent" id="fR" maxlength="120"></label>
       <button class="boton sec" id="fUbi" type="button" style="width:100%;font-size:15px">📍 Mandar mi ubicación (opcional)</button>
       <div id="ubiTxt" style="font-size:13px;color:#7a6552;margin:6px 0 10px"></div>
+      <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="fZ" style="width:22px;height:22px;flex:none;margin-top:2px"><span>Confirmo que mi dirección está en <span id="zonaTxt">la ciudad de León</span> <small>No hacemos entregas en otros municipios ni departamentos.</small></span></label>
       </div>
       <label>Nota <small>opcional</small><textarea class="ent" id="fO" maxlength="120" rows="2" placeholder="Ej.: bien dorado, sin chile"></textarea></label>
       <div class="trampa" aria-hidden="true"><label>Sitio web<input id="fS" tabindex="-1" autocomplete="off"></label></div>
@@ -107,11 +109,11 @@
     <div class="error" id="error"></div>
   </div>
   <div id="paso3" class="oculto listo tarjeta">
-    <div class="grande">✅</div>
-    <h2 id="lsTit">¡Pedido recibido!</h2>
+    <div class="grande">📨</div>
+    <h2 id="lsTit">Pedido enviado</h2>
     <p id="lsTxt"></p>
     <a class="boton wa" id="lsWa" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>
-    <p style="font-size:14px;color:#7a6552">Le confirmamos el envío y el total por WhatsApp. Pague al recibir o por transferencia.</p>
+    <p style="font-size:14px;color:#7a6552">Si lo aceptamos, le confirmamos por WhatsApp el total y la hora. Si no podemos atenderlo, también le avisamos. Pague al recibir o por transferencia.</p>
     <button class="boton sec" onclick="location.reload()">Hacer otro pedido</button>
   </div>
 </main>
@@ -132,7 +134,7 @@
   const guardado = function (k) { try { return localStorage.getItem('lcdf_pedir_' + k) || ''; } catch (e) { return ''; } };
   const guardar = function (k, v) { try { localStorage.setItem('lcdf_pedir_' + k, v); } catch (e) { /* nada */ } };
 
-  let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO';
+  let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO', HOY_ATIENDE = true;
   // El menú se guarda en el teléfono y se pinta de inmediato al abrir; por detrás se trae el actual (Apps Script tarda 1–3 s en frío).
   const MENU_K = 'lcdf_pedir_menu';
   let guardadoMenu = null;
@@ -156,6 +158,13 @@
     document.title = 'Pedir a ' + m.negocio;
     $('aviso').innerHTML = (m.abierto ? '' : '<div class="aviso cerrado"><b>Ahora no estamos recibiendo pedidos por aquí.</b> Escríbanos por WhatsApp.</div>') +
       (m.aviso ? '<div class="aviso">' + esc(m.aviso) + '</div>' : '');
+    // Cualquiera puede ver el menú, pero solo se aceptan pedidos en la zona y en los días de atención.
+    const zona = m.zona || 'la ciudad de León', diasTxt = m.dias_texto || 'sábados y domingos';
+    HOY_ATIENDE = !m.dias || m.dias.indexOf(new Date().getDay()) !== -1;
+    $('zonaTxt').textContent = zona;
+    $('cobertura').className = 'aviso' + (HOY_ATIENDE ? '' : ' cerrado');
+    $('cobertura').innerHTML = '<b>Solo aceptamos pedidos en ' + esc(zona) + ', ' + esc(diasTxt) + '.</b> Si está en otro municipio o departamento no podemos atender su pedido.' +
+      (HOY_ATIENDE ? '' : '<br><b>Hoy no estamos recibiendo pedidos.</b> Puede ver el menú y pedir el próximo día de atención.');
     const cats = {};
     m.productos.forEach(function (p) { (cats[p.categoria || 'Menú'] = cats[p.categoria || 'Menú'] || []).push(p); });
     $('menu').innerHTML = Object.keys(cats).map(function (c) {
@@ -201,7 +210,7 @@
     $('pieTot').textContent = dinero(total());
     $('pieN').textContent = n + ' producto' + (n === 1 ? '' : 's') + (ENTREGA === 'RECOGE' ? ' · para recoger' : ' · más envío');
     $('pieBtn').textContent = PASO === 1 ? 'Continuar ➜' : '✅ Enviar pedido';
-    $('pieBtn').disabled = !n || !M.abierto;
+    $('pieBtn').disabled = !n || !M.abierto || !HOY_ATIENDE;
   }
   function paso(n) {
     PASO = n;
@@ -228,18 +237,19 @@
     $('error').textContent = '';
     const rec = ENTREGA === 'RECOGE';
     const o = { nombre: $('fN').value.trim(), telefono: $('fT').value.trim(), direccion: rec ? '' : $('fD').value.trim(), referencia: rec ? '' : $('fR').value.trim(),
-      nota: $('fO').value.trim(), ubicacion: rec ? '' : UBI, sitio: $('fS').value, entrega: ENTREGA, hora_recoge: rec ? $('fH').value.trim() : '',
+      nota: $('fO').value.trim(), ubicacion: rec ? '' : UBI, sitio: $('fS').value, entrega: ENTREGA, hora_recoge: rec ? $('fH').value.trim() : '', en_zona: rec || $('fZ').checked,
       lineas: Object.keys(CANT).map(function (c) { return { codigo: c, cantidad: CANT[c] }; }) };
     if (o.nombre.length < 2) return falta('Escriba su nombre.', 'fN');
     if (o.telefono.replace(/\D/g, '').length < 8) return falta('Escriba su WhatsApp (8 números).', 'fT');
     if (!rec && o.direccion.length < 6) return falta('Escriba su dirección.', 'fD');
+    if (!rec && !o.en_zona) return falta('Marque la casilla si su dirección está en ' + (M.zona || 'la ciudad de León') + '. Fuera de ahí no hacemos entregas.', 'fZ');
     $('pieBtn').disabled = true; $('pieBtn').textContent = 'Enviando…';
     servidor('pedidoWeb', [o]).then(function (r) {
       guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); }
       $('paso2').classList.add('oculto'); $('pie').classList.add('oculto'); $('paso3').classList.remove('oculto');
-      $('lsTit').textContent = '¡Pedido D' + r.id + ' recibido!';
-      $('lsTxt').innerHTML = rec ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b>, para recoger' + (o.hora_recoge ? ' (' + esc(o.hora_recoge) + ')' : '') + '.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
-        : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.';
+      $('lsTit').textContent = 'Pedido D' + r.id + ' enviado';
+      $('lsTxt').innerHTML = '<b>Todavía no está confirmado:</b> le escribimos por WhatsApp si lo aceptamos.<br>' + (rec ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b>, para recoger' + (o.hora_recoge ? ' (' + esc(o.hora_recoge) + ')' : '') + '.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
+        : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.');
       $('lsWa').href = 'https://wa.me/' + (r.whatsapp.length === 8 ? '505' + r.whatsapp : r.whatsapp) + '?text=' + encodeURIComponent(r.texto);
       window.scrollTo(0, 0);
     }).catch(function (e) { $('error').textContent = e.message; pintarPie(); });
