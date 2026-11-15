@@ -24,76 +24,151 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rye&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-  :root{--cafe:#3B2416;--rojo:#C8372D;--naranja:#E2762B;--amarillo:#F2B33D;--crema:#F3E6C8;--papel:#FFFBF2;--verde:#4E7D1E;--gris:#7a6552;--borde:#e7d6b4}
+  :root{--cafe:#3B2416;--cafe2:#5A3A24;--rojo:#C8372D;--naranja:#E2762B;--amarillo:#F2B33D;--crema:#F3E6C8;--papel:#FFFBF2;--verde:#4E7D1E;--gris:#7a6552;--borde:#e7d6b4;
+    --tinte:#fff4e6;--anillo:0 0 0 3px #e2762b55;--s1:0 1px 2px #3b24161a,0 2px 8px #3b241614;--s2:0 4px 10px #3b24161f,0 10px 28px #3b241624;--r:16px;--r-ch:10px;--t:.16s cubic-bezier(.2,.7,.3,1)}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{background:var(--crema);color:var(--cafe);font-family:Nunito,Arial,sans-serif;font-size:16px;line-height:1.4;padding-bottom:110px}
+  body{background:var(--crema);color:var(--cafe);font-family:Nunito,Arial,sans-serif;font-size:16px;line-height:1.4;padding-bottom:116px}
+  body.bloq{overflow:hidden}
   button,input,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
   .oculto{display:none!important}
-  header{background:linear-gradient(180deg,var(--rojo) 0 70%,var(--naranja) 70% 85%,var(--amarillo) 85%);color:#fff;text-align:center;padding:18px 16px 26px}
-  header picture{display:inline-block;width:120px;height:120px;border-radius:50%;box-shadow:0 6px 18px #0004}
-  header img{width:120px;height:120px;display:block}
-  header h1{font-family:Rye,Georgia,serif;font-weight:400;margin:8px 0 2px;font-size:26px}
-  header p{margin:0;font-weight:700;opacity:.95}
-  main{max-width:640px;margin:0 auto;padding:16px}
-  .info{background:var(--papel);border:2px solid var(--borde);border-radius:14px;padding:12px;font-size:14px;margin-bottom:14px}
-  .info b{display:inline-block;min-width:80px}
-  .aviso{background:#fff4d6;border-left:6px solid var(--amarillo);padding:10px 12px;border-radius:8px;margin:10px 0}
+  .din{font-variant-numeric:tabular-nums}
+  /* ---- los cuatro estados de todo lo que se toca ---- */
+  .tocable{transition:transform var(--t),box-shadow var(--t),border-color var(--t),background-color var(--t)}
+  .tocable:focus-visible{outline:none;box-shadow:var(--anillo)}
+  @media (hover:hover){.tocable:hover:not(:disabled){transform:translateY(-2px);border-color:var(--naranja);box-shadow:var(--s2)}}
+  .tocable.sobre:not(:disabled){transform:translateY(-2px);border-color:var(--naranja);box-shadow:var(--s2)}
+  .tocable:active:not(:disabled),.tocable.apretado:not(:disabled){transform:scale(.97);background-color:var(--tinte);box-shadow:none}
+  .boton.tocable:active:not(:disabled),.boton.tocable.apretado:not(:disabled){background-color:#c9631d}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.tocable:hover,.tocable.sobre,.tocable:active,.tocable.apretado{transform:none!important}}
+  /* ---- encabezado ---- */
+  header{background:linear-gradient(180deg,var(--rojo) 0 70%,var(--naranja) 70% 85%,var(--amarillo) 85%);color:#fff;text-align:center;padding:12px 16px 20px}
+  header picture{display:inline-block;width:96px;height:96px;border-radius:50%;box-shadow:0 6px 18px #0004}
+  header img{width:96px;height:96px;display:block}
+  header h1{font-family:Rye,Georgia,serif;font-weight:400;margin:6px 0 0;font-size:24px}
+  header p{margin:0;font-weight:700;opacity:.95;font-size:14px}
+  main{max-width:980px;margin:0 auto;padding:12px 16px}
+  .vista{animation:entra .18s ease-out}
+  @keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .info{background:var(--papel);border:1px solid var(--borde);border-radius:var(--r);padding:12px;font-size:14px;margin-bottom:12px;box-shadow:var(--s1)}
+  details.info{padding:0}
+  details.info summary{list-style:none;cursor:pointer;padding:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center;min-height:44px;border-radius:var(--r)}
+  details.info summary::-webkit-details-marker{display:none}
+  details.info summary::after{content:"";width:9px;height:9px;border:solid var(--cafe);border-width:0 2.5px 2.5px 0;transform:rotate(45deg);margin:-4px 4px 0 0;transition:transform var(--t)}
+  details.info[open] summary::after{transform:rotate(225deg);margin-top:4px}
+  details.info summary:focus-visible{outline:none;box-shadow:var(--anillo)}
+  details.info .dat{padding:0 12px 12px}
+  .info b{display:inline-block;min-width:92px}
+  .aviso{background:#fff4d6;border-left:6px solid var(--amarillo);padding:10px 12px;border-radius:8px;margin:0 0 10px;font-size:14px}
   .cerrado{background:#fde2df;border-left-color:var(--rojo)}
-  h2{font-family:Rye,Georgia,serif;font-weight:400;font-size:20px;margin:18px 0 8px}
-  .prod{background:#fff;border:2px solid var(--borde);border-radius:14px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  h2{font-family:Rye,Georgia,serif;font-weight:400;font-size:19px;margin:18px 0 8px;padding-left:10px;border-left:4px solid var(--naranja)}
+  /* ---- categorías ---- */
+  .chips{position:sticky;top:0;z-index:4;background:var(--crema);margin:0 -16px;padding:8px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chips button{flex:none;min-height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--borde);background:#fff;font-weight:800;font-size:14px;box-shadow:var(--s1)}
+  .chips button.act{background:var(--cafe);border-color:var(--cafe);color:#fff}
+  .chips button.act:active{background:var(--cafe2)}
+  /* ---- productos ---- */
+  .lista{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .prod{position:relative;background:#fff;border:1px solid var(--borde);border-radius:var(--r);padding:8px;display:grid;grid-template-columns:88px minmax(0,1fr);grid-template-areas:"ft nm" "ft cant";column-gap:12px;row-gap:2px;align-items:center;box-shadow:var(--s1)}
   .prod.con{border-color:var(--naranja);background:#fff8f0}
-  .prod .nm{flex:1;min-width:0}
-  .prod .nm b{display:block}
-  .prod .nm span{color:var(--rojo);font-weight:800}
-  .cant{display:flex;align-items:center;gap:6px}
-  .cant button{width:38px;height:38px;border-radius:50%;border:2px solid var(--cafe);background:#fff;font-weight:800;font-size:18px;cursor:pointer}
-  .cant output{min-width:54px;text-align:center;font-weight:800}
+  .ft{grid-area:ft;position:relative;flex:none;width:88px;height:88px;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:Rye,Georgia,serif;font-size:34px}
+  .ft img{width:100%;height:100%;object-fit:cover;display:block}
+  .prod .nm{grid-area:nm;min-width:0;align-self:end}
+  .prod .nm b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2}
+  .prod .nm span{display:block;color:var(--rojo);font-weight:800;margin-top:2px}
+  .ins{position:absolute;top:-8px;right:-4px;min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--naranja);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:var(--s1)}
+  .cant{grid-area:cant;justify-self:end;align-self:start;display:flex;align-items:center;gap:4px}
+  .cant button{width:44px;height:44px;border-radius:50%;border:1px solid var(--cafe);background:#fff;font-weight:800;font-size:20px;line-height:1;padding:0}
+  .cant output{min-width:48px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+  .cant .elegir{width:auto;padding:0 16px;border-radius:99px;font-size:15px;background:var(--naranja);border-color:var(--naranja);color:#fff}
+  @media (min-width:640px){
+    .lista{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .prod{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:8px 8px 12px}
+    .ft{width:100%;height:auto;aspect-ratio:4/3;font-size:52px}
+    .prod .nm{flex:none;padding:0 4px;align-self:auto}
+    .cant{justify-self:auto;align-self:auto;justify-content:space-between;padding:0 4px;margin-top:auto}
+  }
+  @media (min-width:900px){.lista{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  /* ---- barra del carro ---- */
   .pie{position:fixed;left:0;right:0;bottom:0;background:var(--cafe);color:#fff;padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px #0004;z-index:5}
-  .pie .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .pie .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:12px}
   .pie .t{flex:1}
   .pie .t small{display:block;opacity:.8}
-  .boton{border:0;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer;background:var(--naranja);color:#fff;font-size:17px}
-  .boton:disabled{opacity:.5}
-  .boton.sec{background:#fff;color:var(--cafe);border:2px solid var(--cafe)}
-  .boton.wa{background:#25D366;color:#063;display:block;text-align:center;text-decoration:none;margin-top:10px}
+  #pieTot{display:inline-block;font-size:19px;font-variant-numeric:tabular-nums}
+  #pieTot.pulso{animation:pulso .35s ease-out}
+  @keyframes pulso{40%{transform:scale(1.14);color:var(--amarillo)}}
+  .boton{border:0;border-radius:12px;min-height:48px;padding:0 20px;font-weight:800;background:var(--naranja);color:#fff;font-size:17px;box-shadow:var(--s1)}
+  .boton:disabled{opacity:.5;cursor:default}
+  .boton.sec{background:#fff;color:var(--cafe);border:1px solid var(--cafe)}
+  .boton.wa{background:#25D366;color:#063;display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px}
+  /* ---- hoja inferior ---- */
+  .velo{position:fixed;inset:0;background:#3b241680;z-index:10;display:flex;align-items:flex-end;justify-content:center}
+  .hoja{background:var(--papel);width:100%;max-width:560px;max-height:86dvh;overflow-y:auto;border-radius:20px 20px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:var(--s2);animation:sube .2s ease-out}
+  @keyframes sube{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .tirador{width:44px;height:5px;border-radius:3px;background:var(--borde);margin:0 auto 8px}
+  .hh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+  .hh b{font-size:19px;line-height:1.2}
+  .cerrar{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--borde);background:#fff;font-size:18px;font-weight:800}
+  .pres{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--borde);border-radius:var(--r);margin-bottom:8px;box-shadow:var(--s1);min-height:60px;padding:4px 8px 4px 4px}
+  .pres.con{border-color:var(--naranja);background:#fff8f0}
+  .pres .pb{flex:1;min-height:52px;border:0;background:transparent;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 8px;font-weight:800;border-radius:12px}
+  .pres .pb small{display:block;font-weight:400;color:var(--gris)}
+  .pres .pb .pr{color:var(--rojo);font-variant-numeric:tabular-nums}
+  .pres .cant button{width:44px;height:44px}
+  .pres .otro{flex:1;padding:0 8px;font-weight:800}
+  .pres .otro small{display:block;font-weight:400;color:var(--gris)}
+  @media (min-width:640px){.velo{align-items:center}.hoja{border-radius:20px;padding-top:16px}.tirador{display:none}}
+  /* ---- formulario ---- */
   label{display:block;font-weight:700;margin-bottom:10px;font-size:15px}
   label small{display:block;font-weight:400;color:var(--gris)}
-  input.ent,textarea.ent{width:100%;padding:11px 12px;border:2px solid var(--borde);border-radius:10px;background:#fff;margin-top:4px}
-  input.ent:focus,textarea.ent:focus{outline:none;border-color:var(--naranja)}
-  .tarjeta{background:var(--papel);border:2px solid var(--borde);border-radius:16px;padding:14px;margin-bottom:12px}
-  .resumen div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--borde)}
+  input.ent,textarea.ent{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--borde);border-radius:var(--r-ch);background:#fff;margin-top:4px;transition:box-shadow var(--t),border-color var(--t)}
+  input.ent:focus,textarea.ent:focus{outline:none;border-color:var(--naranja);box-shadow:var(--anillo)}
+  .tarjeta{background:var(--papel);border:1px solid var(--borde);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--s1)}
+  #paso2{max-width:640px;margin:0 auto}
+  .resumen b{white-space:nowrap}
+  .resumen div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--borde);font-variant-numeric:tabular-nums}
   .error{color:var(--rojo);font-weight:800;margin:8px 0}
   .trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  #paso3{max-width:640px;margin:0 auto}
   .listo{text-align:center}
   .listo .grande{font-size:56px}
   footer{text-align:center;color:var(--gris);font-size:12px;padding:16px}
   .opciones{display:flex;gap:8px;margin-bottom:12px}
-  .opciones button{flex:1 1 0;border:2px solid var(--borde);background:#fff;border-radius:12px;padding:12px 6px;font-weight:800;cursor:pointer;font-size:15px}
+  .opciones button{flex:1 1 0;min-height:48px;border:1px solid var(--borde);background:#fff;border-radius:12px;padding:8px 6px;font-weight:800;font-size:15px;box-shadow:var(--s1)}
   .opciones button.act{background:var(--naranja);border-color:var(--naranja);color:#fff}
+  .sw{display:flex;gap:10px;align-items:flex-start}
+  .sw input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--naranja)}
+  #opPago button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:14px;padding:8px 4px;min-height:60px}
+  #opPago button span{font-size:20px;line-height:1}
+  .cuenta{background:#fff;border:1px dashed var(--naranja);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:15px}
+  .cuenta div{display:flex;justify-content:space-between;gap:8px;padding:2px 0}.cuenta b{text-align:right;word-break:break-all}
+  .pagoTxt{font-size:14px;margin:6px 0 0}
 </style>
 </head>
 <body>
 <header>
-  <picture><source type="image/webp" sizes="120px" srcset="../iconos/logo-v3-144.webp 144w, ../iconos/logo-v3-240.webp 240w, ../iconos/logo-v3-360.webp 360w"><img src="../iconos/logo-v3-240.png" width="120" height="120" alt="La Casa del Frito" decoding="async" fetchpriority="high"></picture>
+  <picture><source type="image/webp" sizes="96px" srcset="../iconos/logo-v3-96.webp 96w, ../iconos/logo-v3-144.webp 144w, ../iconos/logo-v3-240.webp 240w"><img src="../iconos/logo-v3-240.png" width="96" height="96" alt="La Casa del Frito" decoding="async" fetchpriority="high"></picture>
   <h1 id="nombre">La Casa del Frito</h1>
   <p id="lema">Tradición que sabe a Nicaragua</p>
 </header>
 <main>
   <div id="cargando" class="info">Cargando el menú…</div>
-  <div id="paso1" class="oculto">
-    <div class="info"><div><b>🕒 Horario</b> <span id="horario"></span></div><div><b>📍 Dirección</b> <span id="direccion"></span></div>
-      <div><b>🛵 Envío</b> <span id="envio"></span></div></div>
+  <div id="paso1" class="oculto vista">
+    <details class="info"><summary>🕒 Horario, dirección y envío</summary><div class="dat"><div><b>🕒 Horario</b> <span id="horario"></span></div><div><b>📍 Dirección</b> <span id="direccion"></span></div>
+      <div><b>🛵 Envío</b> <span id="envio"></span></div></div></details>
     <div class="aviso" id="cobertura"></div>
     <div id="aviso"></div>
+    <div class="chips oculto" id="chips"></div>
     <div id="menu"></div>
   </div>
-  <div id="paso2" class="oculto">
-    <button class="boton sec" onclick="paso(1)" style="padding:8px 14px;font-size:15px">← Volver al menú</button>
+  <div id="paso2" class="oculto vista">
+    <button class="boton sec tocable" onclick="paso(1)" style="min-height:44px;padding:0 14px;font-size:15px">← Volver al menú</button>
     <h2>Su pedido</h2>
     <div class="tarjeta resumen" id="resumen"></div>
     <h2 id="tit2">¿A dónde se lo llevamos?</h2>
-    <div class="opciones" id="opEnt"><button type="button" data-e="DOMICILIO" class="act">🛵 A domicilio</button><button type="button" data-e="RECOGE">🏠 Paso a recogerlo</button></div>
+    <div class="opciones" id="opEnt"><button type="button" class="tocable act" data-e="DOMICILIO">🛵 A domicilio</button><button type="button" class="tocable" data-e="RECOGE">🏠 Paso a recogerlo</button></div>
     <div class="tarjeta">
       <label>Su nombre<input class="ent" id="fN" maxlength="60" autocomplete="name"></label>
       <label>Su WhatsApp <small>8 números; ahí le confirmamos</small><input class="ent" id="fT" inputmode="tel" maxlength="15" autocomplete="tel"></label>
@@ -101,32 +176,38 @@
       <div id="fDom">
       <label>Dirección <small>barrio, de dónde, cuántas cuadras</small><input class="ent" id="fD" maxlength="160" autocomplete="street-address"></label>
       <label>Señas <small>color de la casa, portón… (opcional)</small><input class="ent" id="fR" maxlength="120"></label>
-      <button class="boton sec" id="fUbi" type="button" style="width:100%;font-size:15px">📍 Mandar mi ubicación (opcional)</button>
+      <button class="boton sec tocable" id="fUbi" type="button" style="width:100%;font-size:15px">📍 Mandar mi ubicación (opcional)</button>
       <div id="ubiTxt" style="font-size:13px;color:#7a6552;margin:6px 0 10px"></div>
-      <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="fZ" style="width:22px;height:22px;flex:none;margin-top:2px"><span>Confirmo que mi dirección está en <span id="zonaTxt">la ciudad de León</span> <small>No hacemos entregas en otros municipios ni departamentos.</small></span></label>
+      <label class="sw"><input type="checkbox" id="fZ"><span>Confirmo que mi dirección está en <span id="zonaTxt">la ciudad de León</span> <small>No hacemos entregas en otros municipios ni departamentos.</small></span></label>
       </div>
       <label>Nota <small>opcional</small><textarea class="ent" id="fO" maxlength="120" rows="2" placeholder="Ej.: bien dorado, sin chile"></textarea></label>
       <div class="trampa" aria-hidden="true"><label>Sitio web<input id="fS" tabindex="-1" autocomplete="off"></label></div>
     </div>
+    <h2>¿Cómo va a pagar?</h2>
+    <div class="opciones" id="opPago"><button type="button" class="tocable" data-p="EFECTIVO"><span>💵</span>Efectivo</button><button type="button" class="tocable oculto" data-p="BILLETERA"><span>📱</span>Billetera</button><button type="button" class="tocable oculto" data-p="TRANSFERENCIA"><span>🏦</span>Transferencia</button></div>
+    <div class="tarjeta oculto" id="pagoDet"></div>
     <div class="error" id="error"></div>
   </div>
-  <div id="paso3" class="oculto listo tarjeta">
+  <div id="paso3" class="oculto listo tarjeta vista">
     <div class="grande">📨</div>
-    <h2 id="lsTit">Pedido enviado</h2>
+    <h2 id="lsTit" style="border:0;padding:0">Pedido enviado</h2>
     <p id="lsTxt"></p>
-    <a class="boton wa" id="lsWa" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>
-    <p style="font-size:14px;color:#7a6552">Si lo aceptamos, le confirmamos por WhatsApp el total y la hora. Si no podemos atenderlo, también le avisamos. Pague al recibir o por transferencia.</p>
-    <button class="boton sec" onclick="location.reload()">Hacer otro pedido</button>
+    <a class="boton wa tocable" id="lsWa" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>
+    <div class="aviso oculto" id="lsPago" style="text-align:left"></div>
+    <p style="font-size:14px;color:#7a6552">Si lo aceptamos, le confirmamos por WhatsApp el total y le avisamos cuando se esté preparando y cuando salga. Si no podemos atenderlo, también le avisamos.</p>
+    <button class="boton sec tocable" onclick="location.reload()">Hacer otro pedido</button>
   </div>
 </main>
 <div class="pie oculto" id="pie"><div class="in"><div class="t"><b id="pieTot">C$ 0.00</b><small id="pieN">0 productos · más envío</small></div>
-  <button class="boton" id="pieBtn">Continuar ➜</button></div></div>
+  <button class="boton tocable" id="pieBtn">Continuar ➜</button></div></div>
+<div class="velo oculto" id="velo"><div class="hoja" id="hoja" role="dialog" aria-modal="true" aria-labelledby="hojaTit"></div></div>
 <footer>La Casa del Frito · León, Nicaragua</footer>
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbzHYVkThjM6wdyHPoR5MUnHCitB-EwkZ_Uz8JPGmG5yfWCiPulzqlGxZEDNSrknTq_Meg/exec';
   const $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function dinero(n) { return 'C$ ' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function corto(n) { n = Math.round(Number(n || 0) * 100) / 100; return 'C$' + (n % 1 ? n.toFixed(2) : String(n)); }
   function servidor(f, a) {
     return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ f: f, a: a || [], directo: true }) })
       .then(function (r) { if (!r.ok) throw new Error('El servidor no respondió. Intente otra vez.'); return r.json(); })
@@ -136,7 +217,11 @@
   const guardado = function (k) { try { return localStorage.getItem('lcdf_pedir_' + k) || ''; } catch (e) { return ''; } };
   const guardar = function (k, v) { try { localStorage.setItem('lcdf_pedir_' + k, v); } catch (e) { /* nada */ } };
 
-  let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO', HOY_ATIENDE = true;
+  // CANT guarda una entrada por renglón del carro: "codigo" (cantidad libre) o "codigo||Presentación" (cuántas de esa presentación).
+  let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO', HOY_ATIENDE = true, CAT = '', HOJA = '', ULT_TOT = null;
+  // Forma de pago: EFECTIVO (exacto o con vuelto: paga_con), BILLETERA o TRANSFERENCIA (los datos vienen en M.pago).
+  const PAGO = { forma: '', vuelto: false, paga_con: '' };
+  const TINTES = [['#fde2df', '#C8372D'], ['#ffe9cf', '#b8560f'], ['#fdf0c4', '#8a6a00'], ['#e3efd2', '#4E7D1E'], ['#eadcca', '#5A3A24']];
   // El menú se guarda en el teléfono y se pinta de inmediato al abrir; por detrás se trae el actual (Apps Script tarda 1–3 s en frío).
   const MENU_K = 'lcdf_pedir_menu';
   let guardadoMenu = null;
@@ -151,10 +236,34 @@
     $('cargando').innerHTML = '<span class="error">' + esc(e.message) + '</span>';
   });
 
+  function llave(c, pn) { return pn ? c + '||' + pn : c; }
+  function partir(k) { const i = k.indexOf('||'); return i < 0 ? { c: k, pn: '' } : { c: k.slice(0, i), pn: k.slice(i + 2) }; }
+  function presDe(p) { return Array.isArray(p.presentaciones) ? p.presentaciones.filter(function (x) { return x && x.nombre; }) : []; }
+  function precioPres(p, x) { return Number(x.precio) > 0 ? Number(x.precio) : Number(x.cantidad || 1) * p.precio; }
+  function unidadTxt(p) { return p.unidad === 'unidad' ? '' : ' /' + (p.unidad === 'lb' ? 'lb' : esc(p.unidad)); }
+  function fotoHtml(p, tinte, ini) {
+    const st = 'background:' + tinte[0] + ';color:' + tinte[1];
+    let img = '';
+    if (/^https?:\/\//i.test(p.foto || '')) {
+      const m = /^(.*\/fotos\/[^\/?#]+?)(-480)?\.webp$/i.exec(p.foto), u = esc(p.foto);
+      img = m ? '<img src="' + esc(m[1]) + '.webp" srcset="' + esc(m[1]) + '-480.webp 480w, ' + esc(m[1]) + '.webp 960w" sizes="(max-width:639px) 88px, (max-width:899px) 46vw, 300px" width="960" height="720" alt="" loading="lazy" decoding="async">'
+        : '<img src="' + u + '" width="960" height="720" alt="" loading="lazy" decoding="async">';
+    }
+    return '<div class="ft" style="' + st + '" data-i="' + esc(ini) + '">' + (img || esc(ini)) + '</div>';
+  }
+  // Si una foto no carga, queda el bloque de color con la inicial.
+  document.addEventListener('error', function (e) {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && t.parentNode && t.parentNode.classList.contains('ft')) t.parentNode.textContent = t.parentNode.dataset.i || '';
+  }, true);
+
   function pintarMenu(m) {
     M = m;
-    // Lo que ya eligió el cliente se conserva (si el producto sigue en el menú).
-    Object.keys(CANT).forEach(function (c) { if (!m.productos.some(function (p) { return p.codigo === c; })) delete CANT[c]; });
+    // Lo que ya eligió el cliente se conserva (si el producto o la presentación siguen en el menú).
+    Object.keys(CANT).forEach(function (k) {
+      const q = partir(k), p = m.productos.filter(function (x) { return x.codigo === q.c; })[0];
+      if (!p || (q.pn ? !presDe(p).some(function (x) { return x.nombre === q.pn; }) : presDe(p).length && !(p.unidad === 'lb' || p.fraccion))) delete CANT[k];
+    });
     $('nombre').textContent = m.negocio; $('lema').textContent = m.lema;
     $('horario').textContent = m.horario; $('direccion').textContent = m.direccion; $('envio').textContent = m.envio;
     document.title = 'Pedir a ' + m.negocio;
@@ -167,22 +276,89 @@
     $('cobertura').className = 'aviso' + (HOY_ATIENDE ? '' : ' cerrado');
     $('cobertura').innerHTML = '<b>Solo aceptamos pedidos en ' + esc(zona) + ', ' + esc(diasTxt) + '.</b> Si está en otro municipio o departamento no podemos atender su pedido.' +
       (HOY_ATIENDE ? '' : '<br><b>Hoy no estamos recibiendo pedidos.</b> Puede ver el menú y pedir el próximo día de atención.');
-    const cats = {};
-    m.productos.forEach(function (p) { (cats[p.categoria || 'Menú'] = cats[p.categoria || 'Menú'] || []).push(p); });
-    $('menu').innerHTML = Object.keys(cats).map(function (c) {
-      return '<h2>' + esc(c) + '</h2>' + cats[c].map(function (p) {
-        return '<div class="prod" id="p_' + esc(p.codigo) + '"><div class="nm"><b>' + esc(p.nombre) + '</b><span>' + dinero(p.precio) + (p.unidad === 'unidad' ? '' : ' la ' + (p.unidad === 'lb' ? 'libra' : esc(p.unidad))) + '</span></div>' +
-          '<div class="cant"><button data-m="' + esc(p.codigo) + '" aria-label="Menos">−</button><output id="c_' + esc(p.codigo) + '">0</output><button data-s="' + esc(p.codigo) + '" aria-label="Más">＋</button></div></div>';
-      }).join('');
+    const cats = {}, orden = [];
+    m.productos.forEach(function (p) { const c = p.categoria || 'Menú'; if (!cats[c]) { cats[c] = []; orden.push(c); } cats[c].push(p); });
+    if (CAT && !cats[CAT]) CAT = '';
+    $('chips').classList.toggle('oculto', orden.length < 2);
+    $('chips').innerHTML = orden.length < 2 ? '' : ['Todo'].concat(orden).map(function (c) {
+      return '<button type="button" class="tocable' + ((c === 'Todo' ? '' : c) === CAT ? ' act' : '') + '" data-cat="' + (c === 'Todo' ? '' : esc(c)) + '">' + esc(c) + '</button>';
     }).join('');
-    document.querySelectorAll('[data-s]').forEach(function (b) { b.onclick = function () { mover(b.dataset.s, 1); }; });
-    document.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { mover(b.dataset.m, -1); }; });
-    Object.keys(CANT).forEach(function (c) { mover(c, 0); });
+    $('menu').innerHTML = orden.map(function (c, i) {
+      const tinte = TINTES[i % TINTES.length];
+      return '<section data-sec="' + esc(c) + '"' + (CAT && CAT !== c ? ' class="oculto"' : '') + '><h2>' + esc(c) + '</h2><div class="lista">' + cats[c].map(function (p) {
+        const pr = presDe(p), id = esc(p.codigo), ini = (String(p.nombre).trim()[0] || '?').toUpperCase();
+        const precio = pr.length ? 'desde ' + corto(Math.min.apply(null, pr.map(function (x) { return precioPres(p, x); }))) : corto(p.precio) + unidadTxt(p);
+        return '<article class="prod tocable" id="p_' + id + '">' + fotoHtml(p, tinte, ini) + '<div class="nm"><b>' + esc(p.nombre) + '</b><span class="din">' + precio + '</span></div>' +
+          '<div class="cant">' + (pr.length ? '<button class="elegir tocable" data-h="' + id + '" aria-label="Elegir presentación de ' + esc(p.nombre) + '">＋ Elegir</button>'
+          : '<button class="tocable" data-m="' + id + '" aria-label="Menos">−</button><output id="c_' + id + '">0</output><button class="tocable" data-s="' + id + '" aria-label="Más">＋</button>') + '</div>' +
+          '<span class="ins oculto" id="b_' + id + '"></span></article>';
+      }).join('') + '</div></section>';
+    }).join('');
+    m.productos.forEach(function (p) { refrescar(p.codigo); });
     $('cargando').classList.add('oculto');
     if (PASO === 1) { $('paso1').classList.remove('oculto'); $('pie').classList.remove('oculto'); }
     if (!$('fN').value) { $('fN').value = guardado('n'); $('fT').value = guardado('t'); $('fD').value = guardado('d'); $('fR').value = guardado('r'); }
     pintarPie();
+    if (HOJA) pintarHoja();
+    pintarPago();
   }
+  // ---- forma de pago ----
+  function cuentaHtml(f) {
+    const pg = (M && M.pago) || {}, b = f === 'BILLETERA' ? pg.billetera : pg.transferencia;
+    if (!b) return '';
+    const fila = function (k, v) { return v ? '<div><span>' + k + '</span><b>' + esc(v) + '</b></div>' : ''; };
+    return '<div class="cuenta">' + (f === 'BILLETERA' ? fila('Billetera', b.nombre) + fila('Número', b.numero) : fila('Banco', b.banco) + fila('Cuenta', b.cuenta)) + fila('A nombre de', b.titular) + '</div>';
+  }
+  function pintarPago() {
+    const pg = (M && M.pago) || {}, rec = ENTREGA === 'RECOGE', d = $('pagoDet');
+    document.querySelectorAll('#opPago button').forEach(function (b) {
+      const ok = b.dataset.p === 'EFECTIVO' || (b.dataset.p === 'BILLETERA' ? !!pg.billetera : !!pg.transferencia);
+      b.classList.toggle('oculto', !ok);
+      if (!ok && PAGO.forma === b.dataset.p) PAGO.forma = '';
+      b.classList.toggle('act', b.dataset.p === PAGO.forma);
+    });
+    d.classList.toggle('oculto', !PAGO.forma);
+    if (!PAGO.forma) return;
+    if (PAGO.forma === 'EFECTIVO') {
+      if (rec) { d.innerHTML = '<p class="pagoTxt" style="margin:0">💵 Paga en efectivo cuando pase a recogerlo.</p>'; return; }
+      d.innerHTML = '<div class="opciones" id="opVuelto" style="margin-bottom:8px"><button type="button" class="tocable' + (PAGO.vuelto ? '' : ' act') + '" data-v="0">Pago exacto, sin vuelto</button>' +
+        '<button type="button" class="tocable' + (PAGO.vuelto ? ' act' : '') + '" data-v="1">Necesito vuelto</button></div>' +
+        (PAGO.vuelto ? '<label>¿Con cuánto va a pagar? <small>Ej.: 500 o 1000</small><input class="ent" id="fPC" inputmode="numeric" maxlength="6" value="' + esc(PAGO.paga_con) + '"></label>' +
+          '<p class="pagoTxt">🛵 Le llevamos su vuelto. El total con el envío se lo confirmamos por WhatsApp.</p>'
+          : '<p class="pagoTxt">Por favor tenga el monto exacto al recibir. El total con el envío se lo confirmamos por WhatsApp.</p>');
+      d.querySelectorAll('#opVuelto button').forEach(function (b) {
+        b.onclick = function () { PAGO.vuelto = b.dataset.v === '1'; pintarPago(); if (PAGO.vuelto) $('fPC').focus(); };
+      });
+      if ($('fPC')) $('fPC').oninput = function () { PAGO.paga_con = $('fPC').value; };
+      return;
+    }
+    const b = PAGO.forma === 'BILLETERA' ? pg.billetera : pg.transferencia;
+    d.innerHTML = cuentaHtml(PAGO.forma) + '<button type="button" class="boton sec tocable" id="copiar" style="width:100%;font-size:15px;min-height:44px">📋 Copiar el ' + (PAGO.forma === 'BILLETERA' ? 'número' : 'número de cuenta') + '</button>' +
+      '<p class="pagoTxt">' + (rec ? 'Total: <b>' + dinero(total()) + '</b>. Haga el pago' : 'Espere que le confirmemos por WhatsApp el total con el envío; entonces haga el pago') +
+      ' y <b>mande la foto del comprobante por el chat de WhatsApp</b> para confirmar su pedido.</p>';
+    $('copiar').onclick = function () {
+      const v = PAGO.forma === 'BILLETERA' ? b.numero : b.cuenta;
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(v).then(function () { $('copiar').textContent = '✅ Copiado'; }).catch(function () { /* nada */ });
+    };
+  }
+  document.querySelectorAll('#opPago button').forEach(function (b) { b.onclick = function () { PAGO.forma = b.dataset.p; $('error').textContent = ''; pintarPago(); }; });
+  // Un solo oyente para el menú: categorías, − y ＋, y el botón que abre las presentaciones.
+  document.addEventListener('click', function (e) {
+    const b = e.target.closest && e.target.closest('[data-cat],[data-s],[data-m],[data-h],[data-hm],[data-hs],[data-ha]');
+    if (!b) return;
+    const d = b.dataset;
+    if (d.cat !== undefined) {
+      CAT = d.cat;
+      document.querySelectorAll('#chips button').forEach(function (x) { x.classList.toggle('act', x.dataset.cat === CAT); });
+      document.querySelectorAll('#menu section').forEach(function (s) { s.classList.toggle('oculto', !!CAT && s.dataset.sec !== CAT); });
+    } else if (d.s !== undefined) mover(d.s, 1);
+    else if (d.m !== undefined) mover(d.m, -1);
+    else if (d.h !== undefined) abrirHoja(d.h);
+    else if (d.ha !== undefined) mover(d.ha, 1);   // un botón de la hoja: suma uno de esa presentación
+    else if (d.hs !== undefined) mover(d.hs, 1);
+    else if (d.hm !== undefined) mover(d.hm, -1);
+  });
   // A domicilio o "paso a recogerlo": al recoger no se pide dirección y se pregunta la hora.
   document.querySelectorAll('#opEnt button').forEach(function (b) {
     b.onclick = function () {
@@ -196,32 +372,68 @@
   });
 
   function prod(c) { return M.productos.filter(function (p) { return p.codigo === c; })[0]; }
-  // Por libra se pide de media en media libra; lo demás, por unidad.
+  // Por libra se pide de media en media libra; lo demás, por unidad. Las presentaciones van de uno en uno.
   function paso_(p) { return p.unidad === 'lb' || p.fraccion ? 0.5 : 1; }
-  function mover(c, d) {
-    const p = prod(c), n = Math.max(0, Math.round(((CANT[c] || 0) + d * paso_(p)) * 100) / 100);
+  function precioDe(k) { const q = partir(k), p = prod(q.c); if (!q.pn) return p.precio; const x = presDe(p).filter(function (y) { return y.nombre === q.pn; })[0]; return x ? precioPres(p, x) : p.precio; }
+  function mover(k, d) {
+    const q = partir(k), p = prod(q.c);
+    if (!p) return;
+    const n = Math.max(0, Math.round(((CANT[k] || 0) + d * (q.pn ? 1 : paso_(p))) * 100) / 100);
     if (n > 50) return;
-    if (n) CANT[c] = n; else delete CANT[c];
-    $('c_' + c).textContent = n ? (paso_(p) < 1 ? n + ' lb' : n) : '0';
-    $('p_' + c).classList.toggle('con', !!n);
-    pintarPie();
+    if (n) CANT[k] = n; else delete CANT[k];
+    refrescar(q.c); pintarPie();
+    if (HOJA) pintarHoja();
   }
-  function total() { return Object.keys(CANT).reduce(function (s, c) { return s + CANT[c] * prod(c).precio; }, 0); }
+  function cuantos(c) { return Object.keys(CANT).reduce(function (s, k) { return partir(k).c === c ? s + CANT[k] : s; }, 0); }
+  function refrescar(c) {
+    const p = prod(c), el = $('p_' + c);
+    if (!p || !el) return;
+    const n = cuantos(c), o = $('c_' + c), b = $('b_' + c);
+    if (o) o.textContent = n ? (paso_(p) < 1 ? n + ' lb' : n) : '0';
+    el.classList.toggle('con', !!n);
+    b.classList.toggle('oculto', !n); b.textContent = n;
+  }
+  // ---- hoja inferior con las presentaciones ----
+  function abrirHoja(c) { HOJA = c; pintarHoja(); $('velo').classList.remove('oculto'); document.body.classList.add('bloq'); const x = $('hoja').querySelector('.cerrar'); if (x) x.focus(); }
+  function cerrarHoja() { HOJA = ''; $('velo').classList.add('oculto'); document.body.classList.remove('bloq'); }
+  function pintarHoja() {
+    const p = prod(HOJA);
+    if (!p) { cerrarHoja(); return; }
+    const lb = p.unidad === 'lb' || p.fraccion;
+    $('hoja').innerHTML = '<div class="tirador"></div><div class="hh"><b id="hojaTit">' + esc(p.nombre) + '</b><button class="cerrar tocable" id="hojaX" aria-label="Cerrar">✕</button></div>' +
+      presDe(p).map(function (x) {
+        const k = llave(p.codigo, x.nombre), n = CANT[k] || 0, can = Number(x.cantidad);
+        return '<div class="pres' + (n ? ' con' : '') + '"><button class="pb tocable" data-ha="' + esc(k) + '"><span>' + esc(x.nombre) + (can && !(p.unidad === 'unidad' && can === 1) ? '<small>' + can + (p.unidad === 'lb' ? ' lb' : '') + '</small>' : '') + '</span><span class="pr">' + corto(precioPres(p, x)) + '</span></button>' +
+          (n ? '<div class="cant"><button class="tocable" data-hm="' + esc(k) + '" aria-label="Menos">−</button><output>' + n + '</output><button class="tocable" data-hs="' + esc(k) + '" aria-label="Más">＋</button></div>' : '') + '</div>';
+      }).join('') +
+      (lb ? '<div class="pres' + (CANT[p.codigo] ? ' con' : '') + '"><div class="otro">Otra cantidad<small>' + corto(p.precio) + ' /lb, de media en media libra</small></div><div class="cant"><button class="tocable" data-hm="' + esc(p.codigo) + '" aria-label="Menos">−</button><output>' + (CANT[p.codigo] ? CANT[p.codigo] + ' lb' : '0') + '</output><button class="tocable" data-hs="' + esc(p.codigo) + '" aria-label="Más">＋</button></div></div>' : '') +
+      '<button class="boton tocable" id="hojaOk" style="width:100%;margin-top:4px">Listo</button>';
+  }
+  $('velo').addEventListener('click', function (e) { if (e.target === $('velo') || e.target.id === 'hojaX' || e.target.id === 'hojaOk') cerrarHoja(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && HOJA) cerrarHoja(); });
+
+  function total() { return Object.keys(CANT).reduce(function (s, k) { return s + CANT[k] * precioDe(k); }, 0); }
   function pintarPie() {
-    const n = Object.keys(CANT).length;
-    $('pieTot').textContent = dinero(total());
+    const n = Object.keys(CANT).length, t = dinero(total());
+    $('pieTot').textContent = t;
+    if (ULT_TOT !== null && ULT_TOT !== t) { $('pieTot').classList.remove('pulso'); void $('pieTot').offsetWidth; $('pieTot').classList.add('pulso'); }
+    ULT_TOT = t;
     $('pieN').textContent = n + ' producto' + (n === 1 ? '' : 's') + (ENTREGA === 'RECOGE' ? ' · para recoger' : ' · más envío');
     $('pieBtn').textContent = PASO === 1 ? 'Continuar ➜' : '✅ Enviar pedido';
     $('pieBtn').disabled = !n || !M.abierto || !HOY_ATIENDE;
   }
+  function nombreLinea(k) {
+    const q = partir(k), p = prod(q.c);
+    return q.pn ? CANT[k] + ' × ' + esc(p.nombre) + ' (' + esc(q.pn) + ')' : (paso_(p) < 1 ? CANT[k] + ' lb ' : CANT[k] + ' × ') + esc(p.nombre);
+  }
   function paso(n) {
     PASO = n;
     $('paso1').classList.toggle('oculto', n !== 1); $('paso2').classList.toggle('oculto', n !== 2);
-    if (n === 2) $('resumen').innerHTML = Object.keys(CANT).map(function (c) {
-      const p = prod(c);
-      return '<div><span>' + (paso_(p) < 1 ? CANT[c] + ' lb ' : CANT[c] + ' × ') + esc(p.nombre) + '</span><b>' + dinero(CANT[c] * p.precio) + '</b></div>';
+    if (n === 2) $('resumen').innerHTML = Object.keys(CANT).map(function (k) {
+      return '<div><span>' + nombreLinea(k) + '</span><b>' + dinero(CANT[k] * precioDe(k)) + '</b></div>';
     }).join('') + (ENTREGA === 'RECOGE' ? '<div><span>Lo recoge</span><span>sin envío</span></div><div><b>Total</b><b>' + dinero(total()) + '</b></div>'
       : '<div><span>Envío</span><span>se lo confirmamos</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div>');
+    if (n === 2) pintarPago();
     if (PASO_ANTES !== n) window.scrollTo(0, 0);   // al cambiar entre domicilio y recoger no salta arriba
     PASO_ANTES = n;
     pintarPie();
@@ -240,11 +452,16 @@
     const rec = ENTREGA === 'RECOGE';
     const o = { nombre: $('fN').value.trim(), telefono: $('fT').value.trim(), direccion: rec ? '' : $('fD').value.trim(), referencia: rec ? '' : $('fR').value.trim(),
       nota: $('fO').value.trim(), ubicacion: rec ? '' : UBI, sitio: $('fS').value, entrega: ENTREGA, hora_recoge: rec ? $('fH').value.trim() : '', en_zona: rec || $('fZ').checked,
-      lineas: Object.keys(CANT).map(function (c) { return { codigo: c, cantidad: CANT[c] }; }) };
+      lineas: Object.keys(CANT).map(function (k) { const q = partir(k); return q.pn ? { codigo: q.c, cantidad: CANT[k], presentacion: q.pn } : { codigo: q.c, cantidad: CANT[k] }; }) };
     if (o.nombre.length < 2) return falta('Escriba su nombre.', 'fN');
     if (o.telefono.replace(/\D/g, '').length < 8) return falta('Escriba su WhatsApp (8 números).', 'fT');
     if (!rec && o.direccion.length < 6) return falta('Escriba su dirección.', 'fD');
     if (!rec && !o.en_zona) return falta('Marque la casilla si su dirección está en ' + (M.zona || 'la ciudad de León') + '. Fuera de ahí no hacemos entregas.', 'fZ');
+    if (!PAGO.forma) return falta('Elija cómo va a pagar.', 'opPago');
+    const vuelto = !rec && PAGO.forma === 'EFECTIVO' && PAGO.vuelto, pc = Number(String(PAGO.paga_con).replace(/[^\d.]/g, ''));
+    if (vuelto && !(pc > 0)) return falta('Escriba con cuánto va a pagar, para llevarle el vuelto.', 'fPC');
+    if (vuelto && pc < total()) return falta('Con ' + dinero(pc) + ' no alcanza: su pedido es de ' + dinero(total()) + ' más el envío.', 'fPC');
+    o.pago = { forma: PAGO.forma, vuelto: vuelto, paga_con: vuelto ? pc : 0 };
     $('pieBtn').disabled = true; $('pieBtn').textContent = 'Enviando…';
     servidor('pedidoWeb', [o]).then(function (r) {
       guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); }
@@ -253,10 +470,29 @@
       $('lsTxt').innerHTML = '<b>Todavía no está confirmado:</b> le escribimos por WhatsApp si lo aceptamos.<br>' + (rec ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b>, para recoger' + (o.hora_recoge ? ' (' + esc(o.hora_recoge) + ')' : '') + '.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
         : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.');
       $('lsWa').href = 'https://wa.me/' + (r.whatsapp.length === 8 ? '505' + r.whatsapp : r.whatsapp) + '?text=' + encodeURIComponent(r.texto);
+      const f = o.pago.forma;
+      $('lsPago').innerHTML = f === 'EFECTIVO' ? (rec ? '💵 Paga en efectivo al recoger.' : o.pago.vuelto ? '💵 Paga en efectivo con <b>' + dinero(o.pago.paga_con) + '</b>: le llevamos su vuelto.' : '💵 Paga en efectivo al recibir. Tenga el monto exacto.')
+        : cuentaHtml(f) + (rec ? 'Haga el pago de <b>' + dinero(r.total) + '</b>' : 'Cuando le confirmemos el total con el envío, haga el pago') + ' y <b>mande la foto del comprobante por WhatsApp</b> para confirmar su pedido.';
+      $('lsPago').classList.remove('oculto');
       window.scrollTo(0, 0);
     }).catch(function (e) { $('error').textContent = e.message; pintarPie(); });
   }
-  function falta(t, id) { $('error').textContent = t; $(id).focus(); }
+  function falta(t, id) { $('error').textContent = t; const el = $(id); if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); } }
+
+  // Dedo: mientras se toca o se arrastra, lo tocable bajo el dedo se "levanta" (clase .sobre), como con el mouse.
+  (function () {
+    const SEL = '.tocable', opt = { passive: true }; let ant = null;
+    function poner(x, y) {
+      const el = document.elementFromPoint(x, y), t = el && el.closest ? el.closest(SEL) : null;
+      if (t === ant) return;
+      if (ant) ant.classList.remove('sobre');
+      ant = t; if (t) t.classList.add('sobre');
+    }
+    function quitar() { const a = ant; ant = null; setTimeout(function () { if (a) a.classList.remove('sobre'); }, 120); }
+    function toque(e) { const t = e.touches[0]; if (t) poner(t.clientX, t.clientY); }
+    document.addEventListener('touchstart', toque, opt); document.addEventListener('touchmove', toque, opt);
+    document.addEventListener('touchend', quitar, opt); document.addEventListener('touchcancel', quitar, opt);
+  })();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 </script>
 </body>
