@@ -186,6 +186,19 @@
   /* §1.7 tostadas: abajo en celular, arriba en computadora */
   .tostada{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--cafe);color:#fff;padding:12px 18px;border-radius:12px;box-shadow:var(--s2);z-index:60;max-width:92vw;font-weight:700;animation:subeT .2s ease-out}
   .tostada.mal{background:var(--rojo)}
+  /* v0.4.3: los botones de la ventana de cobro quedan SIEMPRE a la vista (abajo de la hoja), aunque el contenido se desplace; el error sale encima de ellos. */
+  .pieFijo{position:sticky;bottom:0;background:var(--papel);padding:6px 0 2px;margin-top:6px;z-index:3;box-shadow:0 -10px 10px -8px #3b24162e}
+  .pieFijo .botones{margin-top:2px}
+  .pieFijo .vuelto{margin:2px 0 6px}
+  .pieFijo .vuelto:empty{display:none}
+  @media (max-width:639px){.pieFijo .vuelto{font-size:20px;line-height:1.25}}
+  @media (max-width:639px){
+    .velo .chips button{min-height:36px;padding:5px 12px}
+    .velo .billetes{gap:5px}
+    .velo .billetes button{min-height:38px;padding:5px 10px}
+    .velo .usdCaja .ayuda{font-size:12px}
+  }
+  .errVentana{background:#fde8e6;color:var(--rojo);border:1px solid var(--rojo);border-radius:10px;padding:10px 12px;margin:10px 0 0;font-weight:700;font-size:15px;line-height:1.35}
   @keyframes subeT{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
   @media (min-width:861px){.tostada{bottom:auto;top:76px}}
   /* §1.5 diálogos: hoja inferior en celular, ventana centrada desde 640 px */
@@ -331,6 +344,8 @@
   .conteo label small{display:block;color:var(--gris);font-weight:600}
   .tablero{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
   .tablero .panel{margin:0}
+  .tablero table.tabla th,.tablero table.tabla td{padding:7px 8px;font-size:14px}
+  @media (min-width:760px){.tablero{grid-auto-flow:dense}.tablero .panel.ancho2{grid-column:span 2}}
   .deliv{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
   .pdel{background:#fff;border:3px solid var(--borde);border-radius:14px;padding:12px}
   .pdel.NUEVO{border-color:var(--rojo)}.pdel.ACEPTADO{border-color:#b98a4b}.pdel.PREPARANDO{border-color:var(--naranja)}.pdel.EN_CAMINO{border-color:var(--amarillo)}
@@ -709,7 +724,7 @@
     <!-- v0.3: Delivery (otra área, con su propia caja) -->
     <div id="v-delivery" class="vista oculto">
       <button class="volver" onclick="salirDelivery()">← Inicio</button>
-      <div class="cajaInfo"><span id="dvInfo"></span><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dvSonido" checked> 🔔 Sonar con pedidos nuevos</label></div>
+      <div class="cajaInfo"><span id="dvInfo"></span><span style="display:flex;gap:10px;align-items:center"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dvSonido" checked> 🔔 Sonar con pedidos nuevos</label><button type="button" class="boton sec peq" onclick="refrescarDel(true)" title="Actualizar" aria-label="Actualizar">🔄</button></span></div>
       <div class="pestanas" id="pestDel">
         <button data-p="tablero">🛵 Pedidos</button>
         <button data-p="nuevo">＋ Nuevo pedido</button>
@@ -819,7 +834,22 @@
       throw new Error(m.replace(/^.*?SESION:\s*/, '').replace(/^Error:\s*/, ''));
     });
   }
+  /** v0.4.3: error DENTRO de una ventana o panel, justo encima de la fila de botones (la tostada tapaba el vuelto y el botón en el celular). */
+  function errorSobre(fila, texto) {
+    const p = fila.parentNode;
+    p.querySelectorAll('.errVentana').forEach(function (x) { x.remove(); });
+    const e = document.createElement('div');
+    e.className = 'errVentana'; e.setAttribute('role', 'alert'); e.textContent = texto;
+    p.insertBefore(e, fila);
+    try { e.scrollIntoView({ block: 'nearest' }); } catch (x) { /* nada */ }
+    setTimeout(function () { e.remove(); }, 6000);
+  }
   function tostada(texto, mal) {
+    const t = mal ? document.querySelector('#velo .tarjeta') : null;
+    if (t) {
+      const hoja = Array.prototype.filter.call(t.querySelectorAll('.botones'), function (x) { return x.parentNode === t || x.parentNode.classList.contains('pieFijo'); });
+      if (hoja.length) { errorSobre(hoja[hoja.length - 1], texto); return; }
+    }
     const d = document.createElement('div');
     d.className = 'tostada' + (mal ? ' mal' : '');
     d.textContent = texto;
@@ -1017,14 +1047,14 @@
     { id: 'vender', nombre: 'Vender', mods: ['despacho', 'cobrar', 'vender', 'delivery', 'encargos', 'caja', 'sincobro'] },
     { id: 'cocina', nombre: 'Cocina e inventario', mods: ['cocina', 'produccion', 'inventario', 'costos', 'menu'] },
     { id: 'admin', nombre: 'Administración', mods: ['tablero', 'reportes', 'contabilidad', 'personal', 'config'] }];
-  const PRINCIPAL_ROL = { Despachador: 'despacho', Cajero: 'cobrar', Delivery: 'delivery', 'Supervisor cocina': 'cocina', Admin: 'tablero', Superadmin: 'tablero' };
+  const PRINCIPAL_ROL = { Despachador: 'despacho', Cajero: 'cobrar', Delivery: 'delivery', 'Supervisor cocina': 'produccion', Admin: 'tablero', Superadmin: 'tablero' };
   const DIAS_TXT = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   const MESES_TXT = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   function fechaLarga(d) { return DIAS_TXT[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES_TXT[d.getMonth()]; }
   function pintarModulos() {
     const ids = MODULOS.map(function (m) { return m.id; });
     let principal = PRINCIPAL_ROL[YO.rol];
-    if (ids.indexOf(principal) === -1 || !MODULOS[ids.indexOf(principal)].listo) principal = (MODULOS.filter(function (m) { return m.listo && !m.oculto; })[0] || {}).id;
+    if (ids.indexOf(principal) === -1 || !MODULOS[ids.indexOf(principal)].listo) principal = (MODULOS.filter(function (m) { return m.listo && !m.oculto && m.id !== 'sincobro'; })[0] || {}).id;
     const conocidos = [].concat.apply([], GRUPOS_MOD.map(function (g) { return g.mods; }));
     const ficha = function (m) {
       const etq = m.oculto ? '<span class="etq roja">Solo tú</span>' : (m.listo ? '' : '<span class="etq">Próximamente</span>');
@@ -1281,7 +1311,8 @@
     $('r-cajas').innerHTML = REP.cierres.length ? '<div class="lista">' + REP.cierres.map(function (c) {
       const d = c.diferencia;
       return '<div class="fila"><div class="info"><b>Caja ' + c.id + (c.area === 'Delivery' ? ' · Delivery' : '') + ' · ' + esc(c.usuario) + '</b><small>' + esc(c.punto) + ' · ' + esc(c.apertura) + (c.cierre ? ' → ' + esc(c.cierre) : ' · <b>ABIERTA</b>') +
-        (c.estado === 'CERRADA' ? '<br>Debía ' + dinero(c.esperado) + ' · contó ' + dinero(c.contado) + ' · billetera ' + dinero(c.billetera) + (c.pago_delivery ? ' · pagó a repartidores ' + dinero(c.pago_delivery) : '') : '') +
+        (c.estado === 'CERRADA' ? '<br>Debía ' + dinero(c.esperado) + ' · contó ' + dinero(c.contado) + ' · billetera ' + dinero(c.billetera) + (c.pago_delivery ? ' · pagó a repartidores ' + dinero(c.pago_delivery) : '') +
+          (c.usd_esperado || c.usd_contado ? '<br>Dólares: debía US$ ' + c.usd_esperado + ' · contó US$ ' + c.usd_contado + (c.diferencia_usd ? ' · <b style="color:' + (c.diferencia_usd < 0 ? '#C8372D' : '#4E7D1E') + '">' + (c.diferencia_usd < 0 ? 'faltaron ' : 'sobraron ') + 'US$ ' + Math.abs(c.diferencia_usd) + '</b>' : ' ✅') : '') : '') +
         (c.nota ? '<br>📝 ' + esc(c.nota) : '') + '</small></div>' +
         (c.estado === 'CERRADA' ? '<b style="white-space:nowrap;color:' + (d < 0 ? '#C8372D' : d > 0 ? '#4E7D1E' : 'inherit') + '">' + (d === 0 ? '✅ Cuadró' : (d < 0 ? 'Faltó ' : 'Sobró ') + dinero(Math.abs(d))) + '</b>' : '') + '</div>';
     }).join('') + '</div>' : '<div class="ayuda">No hubo cajas en este período.</div>';
@@ -1498,10 +1529,10 @@
           modal('<h2>Pagar: ' + esc(x.nombre) + '</h2><p style="margin-top:0">Mes ' + esc(o.mes) + '</p><div class="grid2">' +
             '<label class="campo">Monto pagado (C$)<input class="ent" id="pgM" inputmode="decimal" value="' + (x.monto || '') + '"></label>' +
             '<label class="campo">Pagado con<select class="ent" id="pgK">' + opciones(CT.cuentas, x.cuenta) + '</select></label>' +
-            '<label class="campo">Fecha<input class="ent" type="date" id="pgF" value="' + fechaTxt(new Date()) + '"></label></div>' +
-            '<div class="botones"><button class="boton" id="pgOk">Registrar pago</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
-          $('pgOk').onclick = function () {
-            llamar('pagarObligacion', x.id, o.mes, $('pgM').value, $('pgK').value, $('pgF').value).then(function () { cerrarModal(); tostada('Pago registrado.'); pintarObligaciones(); }).catch(fallo);
+            '<label class="campo">Fecha<input class="ent" type="date" id="obF" value="' + fechaTxt(new Date()) + '"></label></div>' +
+            '<div class="botones"><button class="boton" id="obOk">Registrar pago</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
+          $('obOk').onclick = function () {
+            llamar('pagarObligacion', x.id, o.mes, $('pgM').value, $('pgK').value, $('obF').value).then(function () { cerrarModal(); tostada('Pago registrado.'); pintarObligaciones(); }).catch(fallo);
           };
         };
       });
@@ -1992,7 +2023,7 @@
       '<h3 style="margin:8px 0 4px">Partes que salen</h3><div id="dsL" class="lista"></div>' +
       '<div class="botones"><button class="boton sec peq" id="dsMas">＋ Otra parte</button></div>' +
       '<div class="panel" id="dsR" style="background:#fff;margin-top:10px"></div>' +
-      '<button class="boton" id="dsOk">Guardar costos en los insumos</button></div>';
+      '<button class="boton" id="csOk">Guardar costos en los insumos</button></div>';
     let modo = 'valor';
     $('dsI').onchange = function () {
       const i = insRC($('dsI').value);
@@ -2002,7 +2033,7 @@
     ['dsP', 'dsC'].forEach(function (id) { $(id).oninput = function () { calcDespiece(modo); }; });
     $('dsM').querySelectorAll('button').forEach(function (b) { b.onclick = function () { modo = b.dataset.m; $('dsM').querySelectorAll('button').forEach(function (x) { x.classList.toggle('act', x === b); }); pintarPartes(modo); }; });
     $('dsMas').onclick = function () { leerPartes(); PARTES.push({ insumo: '', peso: '', valor: '' }); pintarPartes(modo); };
-    $('dsOk').onclick = function () {
+    $('csOk').onclick = function () {
       const r = calcDespiece(modo);
       if (!r) return tostada('Complete el peso, el costo y las partes.', true);
       const sinInsumo = r.filter(function (p) { return !p.insumo; });
@@ -2058,6 +2089,16 @@
   let VT = null, CARRO = [], CANAL = 'Comer aquí', PEST_VEN = 'vender';
   const num = function (v) { return Number(String(v == null ? '' : v).replace(',', '.')) || 0; };
   const r2 = function (n) { return Math.round(Number(n) * 100) / 100; };
+  const r4 = function (n) { return Math.round(Number(n) * 10000) / 10000; };   // v0.4.3: libras que salen de un monto (C$458 ÷ C$380 = 1.2053)
+  /** v0.4.3: el importe de un renglón es el GUARDADO: por monto = el monto escrito; si no, cantidad × precio (2 decimales). Nunca se recalcula un monto. */
+  function impLinea(l) { return l.por_monto ? r2(l.monto) : r2(l.cantidad * l.precio); }
+  /** v0.4.3: texto de abajo del nombre en los carros: "C$ 458.00 (1.205 lb)" por monto; "1.125 lb × C$ 380.00 = C$ 427.50" por libras. */
+  function subLinea(l) {
+    const u = l.unidad === 'unidad' ? '' : l.unidad;
+    if (l.por_monto) return dinero(l.monto) + ' (' + cant(l.cantidad, u).trim() + ')';
+    if (u === 'lb' || l.fraccion) return cant(l.cantidad, u).trim() + ' × ' + dinero(l.precio) + ' = ' + dinero(impLinea(l));
+    return cant(l.cantidad, u) + ' × ' + dinero(l.precio);
+  }
   document.querySelectorAll('#pestVen button').forEach(function (b) { b.onclick = function () { pestanaVen(b.dataset.p); }; });
 
   function abrirVentas(p, canal) {
@@ -2097,17 +2138,19 @@
   }
 
   function formAbrirCaja(destino, despues) {
+    // Los ids llevan el id del contenedor: este formulario se pinta en Vender, Mi caja y Cobrar a la vez y no deben chocar.
+    const k = 'ac_' + (destino.id || 'x') + '_';
     destino.innerHTML = '<div class="panel"><h3 style="margin-top:0">Abra su caja para empezar</h3>' +
       '<p>Cuente el dinero con que empieza (sencillo para dar vuelto).</p>' +
-      '<div class="grid2"><label class="campo">Punto de venta<select class="ent" id="acP">' + VT.puntos.map(function (p) {
+      '<div class="grid2"><label class="campo">Punto de venta<select class="ent" id="' + k + 'P">' + VT.puntos.map(function (p) {
         return '<option value="' + esc(p.id) + '"' + (p.id === VT.punto.id ? ' selected' : '') + '>' + esc(p.nombre) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="campo">Efectivo inicial (C$)<input class="ent" id="acM" inputmode="decimal" placeholder="0"></label></div>' +
-      '<button class="boton" id="acOk">💵 Abrir caja</button></div>';
-    $('acOk').onclick = function () {
-      $('acOk').disabled = true;
-      llamar('abrirCaja', $('acP').value, $('acM').value || 0).then(function () {
+      '<label class="campo">Efectivo inicial (C$)<input class="ent" id="' + k + 'M" inputmode="decimal" placeholder="0"></label></div>' +
+      '<button class="boton" id="' + k + 'Ok">💵 Abrir caja</button></div>';
+    $(k + 'Ok').onclick = function () {
+      $(k + 'Ok').disabled = true;
+      llamar('abrirCaja', $(k + 'P').value, $(k + 'M').value || 0).then(function () {
         tostada('Caja abierta. ¡Buenas ventas!'); return cargarVentas().then(function () { if (despues) despues(); else pestanaVen(PEST_VEN); });
-      }).catch(fallo).then(function () { if ($('acOk')) $('acOk').disabled = false; });
+      }).catch(fallo).then(function () { if ($(k + 'Ok')) $(k + 'Ok').disabled = false; });
     };
   }
 
@@ -2165,14 +2208,14 @@
   function tocarProducto(c) {
     elegirProducto({ menu: VT.menu, carro: CARRO, revisar: CANAL !== 'Encargo', sin_existencia: VT.sin_existencia, alCambiar: pintarCarro }, c);
   }
-  function subtotalCarro() { return r2(CARRO.reduce(function (s, l) { return s + l.cantidad * l.precio; }, 0)); }
+  function subtotalCarro() { return r2(CARRO.reduce(function (s, l) { return s + impLinea(l); }, 0)); }
   function pintarCarro() {
     if (!$('carro')) return;
     const sub = subtotalCarro();
     $('carro').innerHTML = CARRO.length ? CARRO.map(function (l, k) {
-      return '<div class="lin"><div class="nm"><b>' + esc(l.nombre) + '</b><small>' + cant(l.cantidad, l.unidad === 'unidad' ? '' : l.unidad) + ' × ' + dinero(l.precio) + '</small></div>' +
+      return '<div class="lin"><div class="nm"><b>' + esc(l.nombre) + '</b><small>' + subLinea(l) + '</small></div>' +
         (l.unidad === 'lb' || l.fraccion ? '' : '<button class="mm" data-m="' + k + '">−</button><button class="mm" data-s="' + k + '">＋</button>') +
-        '<b style="white-space:nowrap">' + dinero(l.cantidad * l.precio) + '</b><button class="mm" data-x="' + k + '" title="Quitar">✕</button></div>';
+        '<b style="white-space:nowrap">' + dinero(impLinea(l)) + '</b><button class="mm" data-x="' + k + '" title="Quitar">✕</button></div>';
     }).join('') + '<div class="totalGrande"><span>Subtotal</span><span>' + dinero(sub) + '</span></div>'
       : '<div class="ayuda">Toque los productos para agregarlos.</div>';
     $('carro').querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { const l = CARRO[b.dataset.m]; l.cantidad--; if (l.cantidad <= 0) CARRO.splice(b.dataset.m, 1); pintarCarro(); }; });
@@ -2188,7 +2231,49 @@
     return lineasDe(CARRO);   // v0.4: con la presentación de cada renglón
   }
 
-  /** Ventana de cobro. opciones: {total, titulo, alConfirmar(pago) -> Promise, descuento} */
+  // ---------- v0.4.2: dólares en efectivo (solo billetes de 1, 5, 10 y 20; el vuelto siempre es en córdobas) ----------
+  const USD_BILLETES = [1, 5, 10, 20];
+  /** Bloque "Recibe (US$)" con botones rápidos. pre = prefijo de los ids; d = {acepta, tipo_cambio}; valor = dólares ya escritos. */
+  function htmlUsd(pre, d, valor) {
+    if (!d || !d.acepta) return '';
+    return '<div class="usdCaja" id="' + pre + 'Us"><label class="campo">Recibe (US$) <small>billetes de 1, 5, 10 y 20</small>' +
+      '<input class="ent" id="' + pre + 'UsR" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" placeholder="0" value="' + esc(String(valor || '').replace(/\D/g, '')) + '" style="font-size:22px;font-weight:800"></label>' +
+      '<div class="billetes" id="' + pre + 'UsB">' + USD_BILLETES.map(function (v) { return '<button type="button" data-u="' + v + '">US$' + v + '</button>'; }).join('') +
+      '<button type="button" data-u="0">Borrar</button></div>' +
+      '<div class="ayuda" style="text-align:left;margin-top:0">No se aceptan billetes de 50 ni de 100 dólares.</div></div>';
+  }
+  function leerUsd(pre) { return $(pre + 'UsR') ? Math.max(0, Math.floor(num($(pre + 'UsR').value.replace(/\D/g, '')))) : 0; }
+  /** v0.4.3: los dólares son solo dígitos: cualquier otra cosa (punto, signo, letras) se borra al escribir o pegar. alAntes() = primer toque (para vaciar el campo de córdobas precargado). */
+  function enlazarUsd(pre, alCambiar, alAntes) {
+    if (!$(pre + 'UsR')) return;
+    $(pre + 'UsR').oninput = function () {
+      const limpio = $(pre + 'UsR').value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+      if ($(pre + 'UsR').value !== limpio) $(pre + 'UsR').value = limpio;
+      if (alAntes) alAntes();
+      alCambiar();
+    };
+    $(pre + 'UsB').querySelectorAll('button').forEach(function (b) {
+      b.onclick = function () { if (alAntes) alAntes(); const u = Number(b.dataset.u); $(pre + 'UsR').value = u ? String(leerUsd(pre) + u) : ''; alCambiar(); };
+    });
+  }
+  /** Lo recibido en córdobas equivalentes: córdobas + dólares × tipo de cambio. */
+  function equivalenteRecibido(csTxt, usd, d) { return r2(num(csTxt) + usd * ((d && d.tipo_cambio) || 0)); }
+  /**
+   * Texto en vivo (v0.4.3): "C$ 300.00 + US$20 (C$ 720.00) = C$ 1,020.00 · Vuelto C$ 70.00" (o "… · Faltan C$ …").
+   * cajaCs (opcional) = córdobas que debe haber en la caja: si el vuelto es mayor, sale un aviso (no bloquea).
+   */
+  function textoVuelto(csTxt, usd, d, t, cajaCs) {
+    if (String(csTxt) === '' && !usd) return '';
+    const cs = num(csTxt), eqUsd = r2(usd * ((d && d.tipo_cambio) || 0)), eq = r2(cs + eqUsd);
+    const pref = usd ? (cs ? dinero(cs) + ' + ' : '') + 'US$' + usd + ' (' + dinero(eqUsd) + ') = ' + dinero(eq) + ' · ' : '';
+    const vuelto = r2(eq - t);
+    const aviso = eq >= t && cajaCs != null && vuelto > r2(cajaCs) + 0.004
+      ? '<div class="aviso" style="font-size:14px;font-weight:600;text-align:left;color:#3B2416">Ojo: el vuelto (' + dinero(vuelto) + ') es más que los córdobas de la caja (' + dinero(Math.max(0, cajaCs)) + ').</div>' : '';
+    return (eq < t ? '<span style="color:#C8372D">' + pref + 'Faltan ' + dinero(r2(t - eq)) + '</span>' : pref + (usd ? 'Vuelto ' : 'Vuelto: ') + dinero(vuelto)) + aviso;
+  }
+
+  /** Ventana de cobro. opciones: {total, titulo, alConfirmar(pago) -> Promise, descuento, dolares: {acepta, tipo_cambio}, usd0: dólares ya escritos,
+   *  mixto: el cliente dijo que paga con las dos monedas (los dos campos salen escritos a propósito), cajaCs: córdobas que debe haber en la caja} */
   function ventanaCobro(o) {
     const formas = o.formas || VT.formas_pago;
     // v0.4.1: o.forma = forma que dijo el cliente (sale marcada); o.recibido = con cuánto dijo que paga.
@@ -2197,27 +2282,29 @@
       (o.descuento ? '<label class="campo">Descuento (C$) <small>solo administración</small><input class="ent" id="pgDes" inputmode="decimal" placeholder="0"></label>' : '') +
       '<div class="totalGrande" style="margin:0 0 10px"><span>A cobrar</span><span id="pgTot"></span></div>' +
       '<div class="chips" id="pgF">' + formas.map(function (f, k) { return '<button data-f="' + esc(f) + '" class="' + (k === f0 ? 'act' : '') + '">' + esc(f) + '</button>'; }).join('') + '</div>' +
-      '<div id="pgEf"><label class="campo">Recibido (C$)<input class="ent" id="pgR" inputmode="decimal" style="font-size:22px;font-weight:800" value="' + esc(o.recibido == null ? '' : o.recibido) + '"></label>' +
-      '<div class="billetes" id="pgB"></div><div class="vuelto" id="pgV"></div></div>' +
+      '<div id="pgEf"><label class="campo">Recibe (C$)<input class="ent" id="pgR" inputmode="decimal" style="font-size:22px;font-weight:800" value="' + esc(o.recibido == null ? '' : o.recibido) + '"></label>' +
+      '<div class="billetes" id="pgB"></div>' + htmlUsd('pg', o.dolares, o.usd0) + '</div>' +
       '<div id="pgBi" class="oculto"><label class="campo">Referencia de la transferencia <small>opcional</small><input class="ent" id="pgRef" maxlength="40"></label></div>' +
-      '<div class="botones"><button class="boton" id="pgOk" style="flex:1">✅ Confirmar</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
+      '<div class="pieFijo"><div class="vuelto" id="pgV"></div><div class="botones"><button class="boton" id="pgOk" style="flex:1">✅ Confirmar</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div></div>');
     let forma = formas[f0];
     const total = function () { return r2(Math.max(0, o.total - (o.descuento ? num($('pgDes').value) : 0))); };
     const calc = function () {
       const t = total();
       $('pgTot').textContent = dinero(t);
       const ef = /^efectivo/i.test(forma);
-      $('pgEf').classList.toggle('oculto', !ef); $('pgBi').classList.toggle('oculto', ef);
+      $('pgEf').classList.toggle('oculto', !ef); $('pgBi').classList.toggle('oculto', ef); $('pgV').classList.toggle('oculto', !ef);
       const sug = [t].concat([50, 100, 200, 500, 1000].map(function (b) { return Math.ceil(t / b) * b; })).filter(function (v, i, a) { return v > 0 && a.indexOf(v) === i; }).slice(0, 5);
       $('pgB').innerHTML = sug.map(function (v, i) { return '<button data-v="' + v + '">' + (i === 0 ? 'Exacto' : dinero(v).replace('.00', '')) + '</button>'; }).join('');
-      $('pgB').querySelectorAll('button').forEach(function (b) { b.onclick = function () { $('pgR').value = b.dataset.v; vuelto(); }; });
+      $('pgB').querySelectorAll('button').forEach(function (b) { b.onclick = function () { crTocado = true; $('pgR').value = b.dataset.v; vuelto(); }; });
       vuelto();
     };
-    const vuelto = function () {
-      const r = num($('pgR').value), t = total();
-      $('pgV').innerHTML = $('pgR').value === '' ? '' : r < t ? '<span style="color:#C8372D">Faltan ' + dinero(t - r) + '</span>' : 'Vuelto: ' + dinero(r - t);
-    };
-    $('pgR').oninput = vuelto;
+    const vuelto = function () { $('pgV').innerHTML = textoVuelto($('pgR').value, leerUsd('pg'), o.dolares, total(), o.cajaCs); };
+    // v0.4.3: el campo de córdobas viene precargado ("Exacto"/lo que dijo el cliente). Si el cajero empieza a poner dólares sin haberlo tocado, se vacía
+    // (salvo que el pedido sea MIXTO: ahí los dos campos vienen escritos a propósito).
+    let crTocado = !!o.mixto || o.recibido == null || o.recibido === '';
+    const alUsd = function () { if (!crTocado && $('pgR').value === String(o.recibido)) $('pgR').value = ''; crTocado = true; };
+    $('pgR').oninput = function () { crTocado = true; vuelto(); };
+    enlazarUsd('pg', vuelto, alUsd);
     if (o.descuento) $('pgDes').oninput = calc;
     $('pgF').querySelectorAll('button').forEach(function (b) {
       b.onclick = function () { forma = b.dataset.f; $('pgF').querySelectorAll('button').forEach(function (x) { x.classList.toggle('act', x === b); }); calc(); };
@@ -2225,9 +2312,9 @@
     calc();
     $('pgOk').onclick = function () {
       const ef = /^efectivo/i.test(forma);
-      if (ef && $('pgR').value !== '' && num($('pgR').value) < total()) return tostada('Lo recibido no alcanza.', true);
+      if (ef && ($('pgR').value !== '' || leerUsd('pg')) && equivalenteRecibido($('pgR').value, leerUsd('pg'), o.dolares) < total()) return tostada('Lo recibido no alcanza.', true);
       $('pgOk').disabled = true; $('pgOk').textContent = 'Guardando…';
-      o.alConfirmar({ forma_pago: forma, recibido: ef ? $('pgR').value : '', referencia_pago: ef ? '' : $('pgRef').value,
+      o.alConfirmar({ forma_pago: forma, recibido: ef ? $('pgR').value : '', recibido_usd: ef ? leerUsd('pg') : 0, referencia_pago: ef ? '' : $('pgRef').value,
         descuento: o.descuento ? num($('pgDes').value) : 0 })
         .catch(function (e) {
           fallo(e); if ($('pgOk')) { $('pgOk').disabled = false; $('pgOk').textContent = '✅ Confirmar'; }
@@ -2237,15 +2324,17 @@
     };
   }
 
+  /** Córdobas que debe haber en una caja (para el aviso de vuelto). null = no se sabe. */
+  function cajaCsDe(c) { return c && c.resumen && typeof c.resumen.efectivo_esperado === 'number' ? c.resumen.efectivo_esperado : null; }
   function modalCobro() {
     if (!CARRO.length) return;
     if (CANAL === 'Delivery' && (DATOS_CLI.telefono.replace(/\D/g, '').length < 8 || !DATOS_CLI.direccion.trim())) return tostada('Para delivery escriba el teléfono y la dirección.', true);
     const envio = CANAL === 'Delivery' ? num(DATOS_CLI.envio) : 0;
-    ventanaCobro({ titulo: 'Cobrar · ' + CANAL, total: subtotalCarro() + envio, descuento: VT.puede_descuento,
+    ventanaCobro({ titulo: 'Cobrar · ' + CANAL, total: subtotalCarro() + envio, descuento: VT.puede_descuento, dolares: VT.dolares, cajaCs: cajaCsDe(VT.caja),
       alConfirmar: function (pago) {
         return llamar('registrarVenta', { canal: CANAL, lineas: lineasParaServidor(), descuento: pago.descuento, envio: envio,
           cliente: { nombre: DATOS_CLI.nombre, telefono: DATOS_CLI.telefono, direccion: DATOS_CLI.direccion },
-          forma_pago: pago.forma_pago, recibido: pago.recibido, referencia_pago: pago.referencia_pago })
+          forma_pago: pago.forma_pago, recibido: pago.recibido, recibido_usd: pago.recibido_usd, referencia_pago: pago.referencia_pago })
           .then(function (r) { limpiarVenta(); mostrarVentaHecha(r); aplicarVenta(r); if (PEST_VEN === 'vender') pintarVender(); });
       } });
   }
@@ -2258,7 +2347,16 @@
   function aplicarVenta(r) {
     if (!VT) return;
     Object.keys(r.quedan || {}).forEach(function (c) { const p = productoVT(c); if (p) p.existencia = r.quedan[c]; });
-    if (VT.caja && VT.caja.resumen) VT.caja.resumen.total_vendido = r2(VT.caja.resumen.total_vendido + (r.total || 0));
+    if (VT.caja && VT.caja.resumen) {
+      const rs = VT.caja.resumen;
+      rs.total_vendido = r2(rs.total_vendido + (r.total || 0));
+      // v0.4.3: los córdobas que debe haber en la caja suben con lo cobrado en efectivo (menos lo que valían los dólares): sirve al aviso de vuelto.
+      if (/^efectivo/i.test(r.forma_pago || '') && typeof rs.efectivo_esperado === 'number') {
+        const usd = Number(r.recibido_usd) || 0, tc = Number(r.imagen && r.imagen.tipo_cambio) || 0;
+        rs.efectivo_esperado = r2(rs.efectivo_esperado + (Number(r.cobrado) || 0) - usd * tc);
+        rs.usd_esperado = (rs.usd_esperado || 0) + usd; rs.usd_en_cordobas = r2((rs.usd_en_cordobas || 0) + usd * tc);
+      }
+    }
     if (r.cliente && !VT.clientes.some(function (c) { return c.telefono.replace(/\D/g, '') === r.cliente.telefono; })) VT.clientes.push(r.cliente);
     CAJA_VIEJA = true;
   }
@@ -2324,7 +2422,7 @@
         b.onclick = function () {
           const e = lista.filter(function (x) { return String(x.id) === b.dataset.en; })[0];
           if (!VT.caja) { tostada('Primero abra su caja.', true); pestanaVen('caja'); return; }
-          ventanaCobro({ titulo: 'Entregar E-' + e.id + ' · ' + e.cliente_nombre, total: e.saldo, descuento: false,
+          ventanaCobro({ titulo: 'Entregar E-' + e.id + ' · ' + e.cliente_nombre, total: e.saldo, descuento: false, dolares: VT.dolares, cajaCs: cajaCsDe(VT.caja),
             alConfirmar: function (pago) {
               return llamar('entregarEncargo', e.id, pago).then(function (r) { mostrarVentaHecha(r); cargarVentas().then(pintarEncargos); });
             } });
@@ -2359,10 +2457,10 @@
         }).join('') + '</div>' : '<div class="ayuda">Todavía no hay ventas hoy.</div>');
       caja.querySelectorAll('[data-c]').forEach(function (b) {
         b.onclick = function () {
-          modal('<h2>Comprobante ' + esc(b.dataset.c) + '</h2><div id="vhComp" class="ayuda">Preparando…</div><div class="botones"><button class="boton sec" onclick="cerrarModal()">Cerrar</button></div>');
+          modal('<h2>Comprobante ' + esc(b.dataset.c) + '</h2><div id="hcComp" class="ayuda">Preparando…</div><div class="botones"><button class="boton sec" onclick="cerrarModal()">Cerrar</button></div>');
           llamar('comprobanteVenta', b.dataset.c).then(function (d) { return prepararImagen(d, true); })
-            .then(function (c) { ULTIMO = c; if ($('vhComp')) mostrarCompartir($('vhComp'), c); })
-            .catch(function (e) { if ($('vhComp')) $('vhComp').innerHTML = '<div class="error">' + esc(e.message) + '</div>'; });
+            .then(function (c) { ULTIMO = c; if ($('hcComp')) mostrarCompartir($('hcComp'), c); })
+            .catch(function (e) { if ($('hcComp')) $('hcComp').innerHTML = '<div class="error">' + esc(e.message) + '</div>'; });
         };
       });
       caja.querySelectorAll('[data-a]').forEach(function (b) {
@@ -2385,22 +2483,25 @@
     const filas = [['Efectivo inicial', r.monto_inicial], ['Ventas en efectivo', r.efectivo_ventas]]
       .concat(r.adelantos_efectivo ? [['Adelantos de encargos (efectivo)', r.adelantos_efectivo]] : [])
       .concat((r.salidas_lista || []).map(function (s) { return ['<span style="color:#C8372D">− ' + esc(s.que) + '</span>', -s.monto]; }))
-      .concat([['<b>Efectivo que debe haber</b>', r.efectivo_esperado]])
+      .concat(r.usd_esperado ? [['<span style="color:#C8372D">Dólares recibidos (US$ ' + r.usd_esperado + ', se guardan aparte)</span>', '<span style="color:#C8372D">−' + dinero(r.usd_en_cordobas) + '</span>']] : [])
+      .concat([['<b>' + (r.usd_esperado ? 'Córdobas en caja' : 'Efectivo que debe haber') + '</b>', r.efectivo_esperado]])
+      .concat(r.usd_esperado ? [['<b>Dólares en caja</b>', '<b>US$ ' + r.usd_esperado + '</b>'], ['Equivalente total', r.efectivo_equivalente]] : [])
       .concat(Object.keys(r.por_forma || {}).length ? Object.keys(r.por_forma).map(function (k) { return [esc(k) + ' <small>(no va en el cajón)</small>', r.por_forma[k]]; })
         : [['Billetera / transferencias', r.billetera_esperada]]);
     caja.innerHTML = '<div class="panel"><h3 style="margin-top:0">Caja ' + VT.caja.id + ' · ' + esc(VT.punto.nombre) + '</h3><div class="ayuda" style="text-align:left">Abierta: ' + esc(VT.caja.apertura) + '</div>' +
-      '<table class="resumen" style="width:100%;border-collapse:collapse">' + filas.map(function (f) { return '<tr><td>' + f[0] + '</td><td>' + dinero(f[1]) + '</td></tr>'; }).join('') +
+      '<table class="resumen" style="width:100%;border-collapse:collapse">' + filas.map(function (f) { return '<tr><td>' + f[0] + '</td><td>' + (typeof f[1] === 'string' ? f[1] : dinero(f[1])) + '</td></tr>'; }).join('') +
       '<tr><td>Ventas</td><td>' + r.ventas + (r.anuladas ? ' (+' + r.anuladas + ' anuladas)' : '') + '</td></tr>' +
       Object.keys(r.por_canal).map(function (k) { return '<tr><td style="padding-left:16px;color:#7a6552">' + esc(k) + '</td><td>' + dinero(r.por_canal[k]) + '</td></tr>'; }).join('') +
       '<tr><td><b>Total vendido</b></td><td>' + dinero(r.total_vendido) + '</td></tr></table>' +
       (VT.salidas ? '<div class="botones"><button class="boton sec peq" onclick="formSalidaCaja()">➖ Salida de dinero (gasto)</button>' +
         (VT.empleados.length ? '<button class="boton sec peq" onclick="formAdelantoCaja()">👷 Adelanto de salario</button>' : '') + '</div>' : '') + '</div>' +
       '<div class="panel"><h3 style="margin-top:0">Cerrar caja</h3><p style="margin-top:0">Cuente <b>solo billetes y monedas</b> del cajón: escriba cuántos hay de cada uno. El sistema suma.</p>' +
-      htmlConteo('cc', r.por_forma) +
+      htmlConteo('cc', r.por_forma, r.usd_esperado || (VT.dolares && VT.dolares.acepta) ? { esperado: r.usd_esperado || 0 } : null) +
       '<label class="campo">Nota <small>opcional</small><input class="ent" id="ccN" maxlength="120"></label>' +
       '<button class="boton" id="ccOk">🔒 Cerrar caja</button></div>';
     enlazarConteo('cc', r.efectivo_esperado);
     $('ccOk').onclick = function () {
+      if (conteoNegativo('cc')) return tostada('Las cantidades no pueden ser menores que 0.', true);
       if (!conteoEscrito('cc') && !confirm('No escribió ningún billete ni moneda. ¿Cerrar la caja con C$ 0 en efectivo?')) return;
       $('ccOk').disabled = true;
       // Antes de cerrar se revisa la fila de cobro: si quedan órdenes de las despachadoras esperando, se avisa.
@@ -2411,7 +2512,7 @@
         if (n && !confirm('Hay ' + n + ' orden' + (n === 1 ? '' : 'es') + ' esperando cobro (' + dinero(f.ordenes.reduce(function (s, o) { return s + o.total; }, 0)) + ')' +
           (nEnc ? ', ' + (nEnc === 1 ? 'incluido 1 encargo' : 'incluidos ' + nEnc + ' encargos') + ' del delivery' : '') + ':\n' +
           f.ordenes.slice(0, 6).map(function (o) { return '• ' + (o.etiqueta || '#' + o.id) + ' ' + o.cliente_nombre + ' ' + dinero(o.total); }).join('\n') + '\n¿Cerrar la caja de todos modos?')) return null;
-        return llamar('cerrarCaja', '', $('ccN').value, leerConteo('cc'), 'Mostrador').then(function (x) {
+        return llamar('cerrarCaja', '', $('ccN').value, leerConteo('cc'), 'Mostrador', null, leerConteoUsd('cc')).then(function (x) {
           mostrarCierre(x);
           return cargarVentas().then(function () { pestanaVen('caja'); });
         });
@@ -2421,12 +2522,26 @@
 
   // ---------- Cierre por billetes y monedas (mostrador y delivery) ----------
   const DENOM = [1000, 500, 200, 100, 50, 20, 10];
-  function htmlConteo(pre, porForma) {
+  const USD_DENOM = [20, 10, 5, 1];
+  /** Conteo de dólares por billete (solo si la caja usa dólares). usd = {esperado}. */
+  function htmlConteoUsd(pre, usd) {
+    if (!usd) return '';
+    return '<h4 style="margin:14px 0 2px">💵 Dólares del cajón</h4><div class="ayuda" style="text-align:left;margin:0">Cuente aparte los billetes de dólar (de 1, 5, 10 y 20).</div>' +
+      '<div class="conteo">' + USD_DENOM.map(function (d) {
+        return '<label>Billetes de US$ ' + d + '<input id="' + pre + '_u' + d + '" inputmode="numeric" min="0" placeholder="0" autocomplete="off"><small id="' + pre + '_us' + d + '">&nbsp;</small></label>';
+      }).join('') + '</div><div class="totalGrande"><span>Dólares contados</span><span id="' + pre + '_utot" data-esp="' + usd.esperado + '">US$ 0</span></div><div class="vuelto" id="' + pre + '_udif"></div>';
+  }
+  function leerConteoUsd(pre) {
+    if (!$(pre + '_utot')) return null;
+    const o = {}; USD_DENOM.forEach(function (d) { o[d] = $(pre + '_u' + d).value.trim(); });
+    return o;
+  }
+  function htmlConteo(pre, porForma, usd) {
     const otras = Object.keys(porForma || {}).filter(function (k) { return porForma[k]; });
     return '<div class="conteo">' + DENOM.map(function (d) {
-      return '<label>Billetes de C$ ' + d + '<input id="' + pre + '_' + d + '" inputmode="numeric" placeholder="0" autocomplete="off"><small id="' + pre + '_s' + d + '">&nbsp;</small></label>';
-    }).join('') + '<label>Monedas <small>total en C$</small><input id="' + pre + '_mon" inputmode="decimal" placeholder="0" autocomplete="off"></label></div>' +
-      '<div class="totalGrande"><span>Efectivo contado</span><span id="' + pre + '_tot">C$ 0.00</span></div><div class="vuelto" id="' + pre + '_dif"></div>' +
+      return '<label>Billetes de C$ ' + d + '<input id="' + pre + '_' + d + '" inputmode="numeric" min="0" placeholder="0" autocomplete="off"><small id="' + pre + '_s' + d + '">&nbsp;</small></label>';
+    }).join('') + '<label>Monedas <small>total en C$</small><input id="' + pre + '_mon" inputmode="decimal" min="0" placeholder="0" autocomplete="off"></label></div>' +
+      '<div class="totalGrande"><span>Efectivo contado</span><span id="' + pre + '_tot">C$ 0.00</span></div><div class="vuelto" id="' + pre + '_dif"></div>' + htmlConteoUsd(pre, usd) +
       (otras.length ? '<div class="aviso"><b>Esto NO va en el cajón</b> — confírmelo en el celular o en el banco:<br>' +
         otras.map(function (k) { return esc(k) + ': <b>' + dinero(porForma[k]) + '</b>'; }).join('<br>') + '</div>' : '');
   }
@@ -2435,7 +2550,11 @@
     DENOM.forEach(function (d) { t += d * Math.max(0, Math.round(num($(pre + '_' + d).value))); });
     return r2(t + num($(pre + '_mon').value));
   }
-  function conteoEscrito(pre) { return DENOM.some(function (d) { return $(pre + '_' + d).value !== ''; }) || $(pre + '_mon').value !== ''; }
+  // Ninguna cantidad del conteo puede ser menor que 0 (se avisa sin llamar al servidor).
+  function conteoNegativo(pre) {
+    return DENOM.map(function (d) { return $(pre + '_' + d).value; }).concat([$(pre + '_mon').value]).concat($(pre + '_utot') ? USD_DENOM.map(function (d) { return $(pre + '_u' + d).value; }) : []).some(function (v) { v = String(v).trim().replace(',', '.'); return v !== '' && Number(v) < 0; });
+  }
+  function conteoEscrito(pre) { return DENOM.some(function (d) { return $(pre + '_' + d).value !== ''; }) || $(pre + '_mon').value !== '' || ($(pre + '_utot') && USD_DENOM.some(function (d) { return $(pre + '_u' + d).value !== ''; })); }
   /** esperado: número o función (el delivery lo recalcula en vivo al cambiar el pago a repartidores). Devuelve calc. */
   function enlazarConteo(pre, esperadoFijo) {
     const calc = function () {
@@ -2448,6 +2567,18 @@
     };
     DENOM.forEach(function (d) { $(pre + '_' + d).oninput = calc; });
     $(pre + '_mon').oninput = calc;
+    if ($(pre + '_utot')) {
+      const calcU = function () {
+        let t = 0;
+        USD_DENOM.forEach(function (d) { const n = Math.max(0, Math.round(num($(pre + '_u' + d).value))); t += d * n; $(pre + '_us' + d).textContent = n > 0 ? '= US$ ' + (n * d) : ' '; });
+        const esp = Number($(pre + '_utot').dataset.esp) || 0, dif = t - esp;
+        $(pre + '_utot').textContent = 'US$ ' + t;
+        $(pre + '_udif').innerHTML = !USD_DENOM.some(function (d) { return $(pre + '_u' + d).value !== ''; }) ? 'Debe haber US$ ' + esp : dif === 0 ? '✅ Dólares cuadran exacto' :
+          '<span style="color:' + (dif < 0 ? '#C8372D' : '#4E7D1E') + '">' + (dif < 0 ? 'Faltan US$ ' : 'Sobran US$ ') + Math.abs(dif) + '</span>';
+      };
+      USD_DENOM.forEach(function (d) { $(pre + '_u' + d).oninput = calcU; });
+      calcU();
+    }
     calc();
     return calc;
   }
@@ -2461,6 +2592,8 @@
     modal('<h2>🔒 Caja ' + x.id + ' cerrada</h2><table class="resumen" style="width:100%;border-collapse:collapse">' +
       '<tr><td>Efectivo que debía haber</td><td>' + dinero(x.efectivo_esperado) + '</td></tr><tr><td>Contó (billetes y monedas)</td><td>' + dinero(x.efectivo_contado) + '</td></tr>' +
       '<tr><td><b>Diferencia</b></td><td style="color:' + (x.diferencia < 0 ? '#C8372D' : '#4E7D1E') + '">' + dinero(x.diferencia) + '</td></tr>' +
+      ((x.usd_esperado || x.usd_contado) ? '<tr><td>Dólares que debía haber</td><td>US$ ' + x.usd_esperado + '</td></tr><tr><td>Contó en dólares</td><td>US$ ' + x.usd_contado + '</td></tr>' +
+        '<tr><td><b>Diferencia en dólares</b></td><td style="color:' + (x.diferencia_usd < 0 ? '#C8372D' : '#4E7D1E') + '">' + (x.diferencia_usd === 0 ? 'US$ 0' : (x.diferencia_usd < 0 ? '−' : '+') + 'US$ ' + Math.abs(x.diferencia_usd)) + '</td></tr>' : '') +
       Object.keys(x.por_forma || {}).map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + dinero(x.por_forma[k]) + '</td></tr>'; }).join('') +
       '<tr><td>Total vendido</td><td>' + dinero(x.total_vendido) + '</td></tr>' +
       // Delivery: lo que se le pagó a cada repartidor (ya está restado del efectivo que debía haber).
@@ -2474,14 +2607,14 @@
     modal('<h2>➖ Salida de dinero de la caja</h2><p style="margin-top:0">Para gastos pagados con el efectivo de esta caja (gas, hielo, bolsas…). Se resta del efectivo que debe haber.</p>' +
       '<label class="campo">¿Qué se compró o pagó?<input class="ent" id="scD" maxlength="120" placeholder="Ej.: 2 bolsas de hielo"></label>' +
       '<div class="grid2"><label class="campo">Categoría<select class="ent" id="scC">' + VT.categorias_gasto.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="campo">Monto (C$)<input class="ent" id="scM" inputmode="decimal"></label></div>' +
+      '<label class="campo">Monto (C$)<input class="ent" id="sdM" inputmode="decimal"></label></div>' +
       '<label class="campo">¿A quién? <small>opcional</small><input class="ent" id="scP" maxlength="60"></label>' +
-      '<div class="botones"><button class="boton" id="scOk">Registrar salida</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
-    $('scOk').onclick = function () {
-      $('scOk').disabled = true;
-      llamar('registrarGasto', { de_mi_caja: true, descripcion: $('scD').value, categoria: $('scC').value, monto: $('scM').value, proveedor: $('scP').value })
+      '<div class="botones"><button class="boton" id="sdOk">Registrar salida</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
+    $('sdOk').onclick = function () {
+      $('sdOk').disabled = true;
+      llamar('registrarGasto', { de_mi_caja: true, descripcion: $('scD').value, categoria: $('scC').value, monto: $('sdM').value, proveedor: $('scP').value })
         .then(function (x) { cerrarModal(); tostada(x.texto); return cargarVentas().then(function () { pestanaVen('caja'); }); })
-        .catch(function (e) { fallo(e); if ($('scOk')) $('scOk').disabled = false; });
+        .catch(function (e) { fallo(e); if ($('sdOk')) $('sdOk').disabled = false; });
     };
   }
   function formAdelantoCaja() {
@@ -2502,9 +2635,19 @@
   let INV = null, PEST_INV = 'existencias';
   const NOMBRE_TIPO = { PRODUCCION: 'Producción', TRASLADO_SALIDA: 'Salió (traslado)', TRASLADO_ENTRADA: 'Entró (traslado)', COMPRA: 'Compra',
     CONTEO: 'Conteo', MERMA: 'Merma', VENTA: 'Venta', ANULACION: 'Anulación', CONSUMO: 'Usado en receta', SIN_COBRO: 'Sin cobro' };
+  // Unidad en singular solo cuando la cantidad es exactamente 1: unidad -> unidades, porción -> porciones, plato -> platos (lb, kg… no cambian).
+  function unidadTxt(n, unidad) {
+    const u = String(unidad || '');
+    if (!u || Number(n) === 1) return u;
+    const sin = u.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (sin === 'unidad') return u + 'es';
+    if (sin === 'porcion' || sin === 'racion') return u.slice(0, -2) + 'ones';
+    if (sin === 'plato' || sin === 'caja' || sin === 'libra' || sin === 'botella' || sin === 'bolsa') return u + 's';
+    return u;
+  }
   function cant(n, u) {
-    const v = Math.round(Number(n) * 100) / 100;
-    return (u === 'lb' ? v.toFixed(2).replace(/\.?0+$/, '') : String(v)) + ' ' + (u || '');
+    const v = Math.round(Number(n) * 1000) / 1000;   // v0.4.3: hasta 3 decimales (1.125 lb), sin ceros de más
+    return (u === 'lb' ? v.toFixed(3).replace(/\.?0+$/, '') : String(v)) + ' ' + unidadTxt(v, u || '');
   }
   document.querySelectorAll('#pestInv button').forEach(function (b) { b.onclick = function () { pestanaInv(b.dataset.p); }; });
   function abrirInventario(p) {
@@ -2569,7 +2712,7 @@
     $('prOk').onclick = function () {
       $('prOk').disabled = true;
       llamar('registrarProduccion', { codigo: $('prP').value, cantidad: $('prC').value, punto: $('prPt').value, nota: $('prN').value })
-        .then(function (r) { tostada('Registrado: ' + r.texto); return recargarInv('produccion'); })
+        .then(function (r) { tostada('Registrado: ' + String(r.texto).replace(/^([\d.,]+) (\S+)( de )/, function (m, n, u, de) { return n + ' ' + unidadTxt(Number(n.replace(',', '.')), u) + de; })); return recargarInv('produccion'); })
         .catch(fallo).then(function () { if ($('prOk')) $('prOk').disabled = false; });
     };
   }
@@ -2821,7 +2964,7 @@
         k.textContent = pr === '' ? (c > 0 ? (base > 0 ? 'Proporcional: ' + dinero(c * base) : 'Escriba el precio (el producto no tiene precio fijo)') : '')
           : (c > 0 && num(pr) > 0 ? '≈ ' + dinero(num(pr) / c) + (u === 'unidad' ? ' c/u' : ' la ' + (u === 'lb' ? 'libra' : u)) : '');
         k.classList.toggle('mal', falta);
-        f.querySelector('.pp input').placeholder = base > 0 && c > 0 ? dinero(c * base).replace('C$ ', '') : 'Precio';
+        f.querySelector('.pp input').placeholder = base > 0 && c > 0 ? dinero(c * base).replace(/C\$\s/, '') : 'Precio';
       });
     };
     const pintarFilas = function () {
@@ -3016,11 +3159,13 @@
     billetera_nombre: 'Nombre de la billetera móvil — ej.: Tigo Money', billetera_numero: 'Número de la billetera (8 números)', billetera_titular: 'A nombre de quién está la billetera',
     banco_nombre: 'Banco — ej.: BANPRO', banco_cuenta: 'Número de cuenta (y si es en córdobas o dólares)', banco_titular: 'A nombre de quién está la cuenta',
     msj_aceptado: 'Cuando el pedido se ACEPTA', msj_rechazado: 'Cuando el pedido se RECHAZA o cancela', msj_preparando: 'Cuando se está PREPARANDO',
+    acepta_dolares: 'Aceptar dólares en efectivo', tipo_cambio: 'Tipo de cambio: C$ por US$1',
     msj_en_camino: 'Cuando el motorizado SALIÓ a entregar', msj_listo_recoger: 'Encargo para recoger: cuando ya está LISTO' };
   // Títulos que separan los grupos del formulario (van antes de esa clave).
   const SECCION_NEGOCIO = {
     repartidores: ['🛵 Repartidores', 'Solo los nombres de quienes llevan los pedidos (el motorizado y otros). Al salir y al entregar un pedido se elige de esta lista. Quien solo despacha en el delivery no va aquí.'],
     billetera_nombre: ['💳 Pagos del cliente (página de pedidos)', 'Se le muestran al cliente que elige pagar por billetera o transferencia, y van en el mensaje de "pedido aceptado". Deje vacío el número o la cuenta para no ofrecer esa forma de pago.'],
+    acepta_dolares: ['💵 Dólares', 'Solo billetes de 1, 5, 10 y 20 dólares. El vuelto se da en córdobas. El tipo de cambio es el mismo en las dos cajas y en la página de pedidos; al cambiarlo solo cuentan las ventas nuevas.'],
     msj_aceptado: ['💬 Mensajes de WhatsApp al cliente', 'Puede cambiarlos. Marcas que el sistema llena solo: {nombre} {pedido} {negocio} {detalle} {total} {envio} {pago} {motivo} {repartidor}. {pago} = cómo paga (efectivo exacto, vuelto, o los datos de la billetera o cuenta y que mande la foto del comprobante). Si borra un mensaje, vuelve el de siempre.']
   };
   let NEGOCIO = [];
@@ -3032,13 +3177,14 @@
         let ctrl;
         if (x.clave === 'tipo_persona') ctrl = '<select class="ent" data-k="tipo_persona"><option' + (x.valor === 'Natural' ? ' selected' : '') + '>Natural</option><option' + (x.valor === 'Jurídica' ? ' selected' : '') + '>Jurídica</option></select>';
         else if (x.clave === 'pedidos_web') ctrl = '<select class="ent" data-k="pedidos_web"><option' + (String(x.valor).toUpperCase() !== 'NO' ? ' selected' : '') + '>SI</option><option' + (String(x.valor).toUpperCase() === 'NO' ? ' selected' : '') + '>NO</option></select>';
+        else if (x.clave === 'acepta_dolares') ctrl = '<select class="ent" data-k="acepta_dolares"><option' + (String(x.valor).toUpperCase() !== 'NO' ? ' selected' : '') + '>SI</option><option' + (String(x.valor).toUpperCase() === 'NO' ? ' selected' : '') + '>NO</option></select>';
         else if (x.clave === 'descontar_insumos') ctrl = '<select class="ent" data-k="descontar_insumos"><option' + (x.valor !== 'SI' ? ' selected' : '') + '>NO</option><option' + (x.valor === 'SI' ? ' selected' : '') + '>SI</option></select>';
         else if (x.clave === 'pago_delivery') ctrl = '<select class="ent" data-k="pago_delivery"><option value="ENVIO"' + (String(x.valor).toUpperCase() !== 'FIJO' ? ' selected' : '') + '>El envío cobrado de cada entrega</option>' +
           '<option value="FIJO"' + (String(x.valor).toUpperCase() === 'FIJO' ? ' selected' : '') + '>Un monto fijo por entrega</option></select>';
         else if (x.clave === 'regimen') ctrl = '<select class="ent" data-k="regimen"><option' + (x.valor === 'Cuota Fija' ? ' selected' : '') + '>Cuota Fija</option><option' + (x.valor === 'Régimen General' ? ' selected' : '') + '>Régimen General</option></select>';
         else if (x.clave === 'repartidores') ctrl = '<textarea class="ent" data-k="repartidores" rows="4" placeholder="Ej.:\nMotorizado Pedro\nMoto de Juan">' + esc(String(x.valor || '').split(/\s*,\s*/).filter(String).join('\n')) + '</textarea>';
         else if (/^msj_/.test(x.clave)) ctrl = '<textarea class="ent" data-k="' + x.clave + '" rows="4">' + esc(x.valor) + '</textarea>';
-        else ctrl = '<input class="ent" data-k="' + x.clave + '" value="' + esc(x.valor) + '"' + (x.clave === 'envio_sugerido' || x.clave === 'pago_delivery_monto' ? ' inputmode="decimal"' : x.clave === 'billetera_numero' ? ' inputmode="tel" maxlength="15"' : '') + '>';
+        else ctrl = '<input class="ent" data-k="' + x.clave + '" value="' + esc(x.valor) + '"' + (x.clave === 'envio_sugerido' || x.clave === 'pago_delivery_monto' || x.clave === 'tipo_cambio' ? ' inputmode="decimal"' : x.clave === 'billetera_numero' ? ' inputmode="tel" maxlength="15"' : '') + '>';
         const sec = SECCION_NEGOCIO[x.clave];
         // El formulario es de 2 columnas: los títulos de grupo, la lista y los mensajes ocupan todo el ancho.
         return (sec ? '<div style="grid-column:1/-1"><h3 style="margin:18px 0 2px">' + sec[0] + '</h3><p class="ayuda" style="text-align:left;margin:0">' + esc(sec[1]) + '</p></div>' : '') +
@@ -3068,7 +3214,7 @@
   }
   function dinero(n) {
     const v = Math.round(Number(n || 0) * 100) / 100;
-    return 'C$ ' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return 'C$\u00a0' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');   // v0.4.3: espacio sin corte: "C$" nunca se separa de su cifra
   }
 
   // Logo del comprobante (v3, JPEG 384 px sobre blanco). En la web publicada es un archivo del MISMO sitio
@@ -3237,7 +3383,7 @@
       // 8. pago en una línea centrada con fondo crema
       y += 22;
       fuente(17, '700');
-      const pagoTxt = (v.forma_pago || '') + (v.recibido ? ' · Recibido ' + dinero(v.recibido) + ' · Vuelto ' + dinero(v.vuelto) : '');
+      const pagoTxt = v.linea_pago || ((v.forma_pago || '') + (v.recibido ? ' · Recibido ' + dinero(v.recibido) + ' · Vuelto ' + dinero(v.vuelto) : ''));
       const lsP = partir(pagoTxt, W - 2 * M - 40);
       const hP = 18 + 24 * lsP.length;
       const anP = Math.min(W - 2 * M, Math.max.apply(null, lsP.map(function (l) { return ctx.measureText(l).width; })) + 44);
@@ -3439,7 +3585,7 @@
     if (!raiz) return;
     const suma = {};
     // v0.4: todos los renglones del producto, en su unidad base (2 × "Media libra" + 1 lb = 2).
-    carro.forEach(function (l) { suma[l.codigo] = r2((suma[l.codigo] || 0) + (l.abierto ? 1 : (Number(l.cantidad) || 0) * (l.base || 1))); });
+    carro.forEach(function (l) { suma[l.codigo] = Math.round(((suma[l.codigo] || 0) + (l.abierto ? 1 : (Number(l.cantidad) || 0) * (l.base || 1))) * 1000) / 1000; });   // v0.4.3: hasta 3 decimales (1.205), no 1.21
     raiz.querySelectorAll('.prod[data-p]').forEach(function (b) {
       const s = suma[b.dataset.p], i = b.querySelector('.insignia');
       if (i) i.textContent = s ? String(s) : '';
@@ -3458,10 +3604,10 @@
   function presDe(p) {
     return p && Array.isArray(p.presentaciones) ? p.presentaciones.filter(function (x) { return x && x.nombre && Number(x.cantidad) > 0 && Number(x.precio) > 0; }) : [];
   }
-  function equivalePres(n, u) { return u === 'unidad' ? n + (Number(n) === 1 ? ' unidad' : ' unidades') : cant(n, u); }
+  function equivalePres(n, u) { return u === 'unidad' ? n + ' ' + unidadTxt(n, 'unidad') : cant(n, u); }
   /** Cuánto de la unidad base de un producto ya va en el carro (2 × "Media libra" = 1 lb). */
   function baseEnCarro(carro, codigo) {
-    return r2(carro.reduce(function (s, l) { return s + (l.codigo === codigo ? (Number(l.cantidad) || 0) * (l.base || 1) : 0); }, 0));
+    return r4(carro.reduce(function (s, l) { return s + (l.codigo === codigo ? (Number(l.cantidad) || 0) * (l.base || 1) : 0); }, 0));
   }
   /** ¿Cabe "extra" (en unidad base) sin pasarse de lo que hay? Si no, avisa. tope null = no se revisa (sin cobro, encargos, corrección). */
   function cabe(carro, codigo, tope, extra, nombre, unidad) {
@@ -3497,12 +3643,13 @@
     if (!p) return;
     const tope = topeDe(S, p);
     const linea = function (o) { return Object.assign({ codigo: p.codigo, detalle: '', abierto: false, fraccion: false, tope: tope, ub: p.unidad, base: null, presentacion: '' }, o); };
-    const meter = function (cantidad, precio, detalle) {
+    // monto (v0.4.3): si viene, el renglón cobra EXACTAMENTE ese monto y cantidad son las libras (4 decimales) solo para la existencia.
+    const meter = function (cantidad, precio, detalle, monto) {
       if (!cabe(S.carro, p.codigo, tope, cantidad, p.nombre, p.unidad)) return;
-      const l = S.carro.filter(function (x) { return x.codigo === p.codigo && !x.abierto && !x.presentacion; })[0];
-      if (l && !p.precio_abierto) l.cantidad = r2(l.cantidad + cantidad);
+      const l = monto ? null : S.carro.filter(function (x) { return x.codigo === p.codigo && !x.abierto && !x.presentacion && !x.por_monto; })[0];
+      if (l && !p.precio_abierto) l.cantidad = r4(l.cantidad + cantidad);
       else S.carro.push(linea({ nombre: p.nombre + (detalle ? ' (' + detalle + ')' : ''), detalle: detalle || '', unidad: p.unidad,
-        cantidad: cantidad, precio: precio, abierto: p.precio_abierto, fraccion: p.fraccion }));
+        cantidad: cantidad, precio: precio, abierto: p.precio_abierto, fraccion: p.fraccion, por_monto: !!monto, monto: monto ? monto : undefined }));
       S.alCambiar();
     };
     const meterPres = function (x) {
@@ -3518,7 +3665,7 @@
       if (p.unidad === 'lb' || p.fraccion) return pedirLibras(p, meter, S.revisar);
       meter(1, p.precio);
     };
-    if (presDe(p).length) return pedirPresentacion(p, meterPres, otra, tope === null ? null : r2(tope - baseEnCarro(S.carro, p.codigo)), S.carro);
+    if (presDe(p).length) return pedirPresentacion(p, meterPres, otra, tope === null ? null : r4(tope - baseEnCarro(S.carro, p.codigo)), S.carro);
     otra();
   }
   /** ＋ de un renglón del carro: suma 1 (una presentación más) si alcanza. */
@@ -3534,12 +3681,18 @@
       '<div class="billetes">' + fr.map(function (f) { return '<button data-l="' + f[0] + '">' + f[1] + '<br><small>' + dinero(f[0] * p.precio) + '</small></button>'; }).join('') + '</div>' +
       '<div class="grid2"><label class="campo">Libras<input class="ent" id="plL" inputmode="decimal" placeholder="Ej.: 1.25"></label>' +
       '<label class="campo">O por monto (C$)<input class="ent" id="plM" inputmode="decimal" placeholder="Ej.: 100"></label></div><div class="ayuda" id="plR"></div>' +
-      '<div class="botones"><button class="boton" id="plOk">Agregar</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
+      '<div class="botones"><button class="boton" id="plAgOk">Agregar</button><button class="boton sec" onclick="cerrarModal()">Cancelar</button></div>');
     document.querySelectorAll('#velo [data-l]').forEach(function (b) { b.onclick = function () { cerrarModal(); meter(Number(b.dataset.l), p.precio); }; });
-    $('plM').oninput = function () { const m = num($('plM').value); $('plL').value = m > 0 ? r2(m / p.precio) : ''; $('plR').textContent = m > 0 ? '= ' + r2(m / p.precio) + ' lb' : ''; };
-    $('plL').oninput = function () { $('plM').value = ''; $('plR').textContent = num($('plL').value) > 0 ? '= ' + dinero(num($('plL').value) * p.precio) : ''; };
-    const ok = function () { const l = r2(num($('plL').value)); if (!(l > 0)) return tostada('Escriba las libras o el monto.', true); cerrarModal(); meter(l, p.precio); };
-    $('plOk').onclick = ok;
+    // v0.4.3: lo que se escribe se respeta. Por monto NO se toca el campo de libras: solo se muestra "≈ 1.205 lb" como información.
+    $('plM').oninput = function () { const m = num($('plM').value); $('plL').value = ''; $('plR').textContent = m > 0 ? '≈ ' + cant(r4(m / p.precio), 'lb').trim() + ' · se cobra ' + dinero(m) : ''; };
+    $('plL').oninput = function () { $('plM').value = ''; const l = Math.round(num($('plL').value) * 1000) / 1000; $('plR').textContent = l > 0 ? '= ' + dinero(r2(l * p.precio)) : ''; };
+    const ok = function () {
+      const m = r2(num($('plM').value)), l = Math.round(num($('plL').value) * 1000) / 1000;
+      if (m > 0) { const lb = r4(m / p.precio); if (!(lb > 0)) return tostada('Ese monto es muy pequeño.', true); cerrarModal(); return meter(lb, p.precio, '', m); }
+      if (!(l > 0)) return tostada('Escriba las libras o el monto.', true);
+      cerrarModal(); meter(l, p.precio);
+    };
+    $('plAgOk').onclick = ok;
     $('plL').onkeydown = $('plM').onkeydown = function (e) { if (e.key === 'Enter') ok(); };
     setTimeout(function () { if ($('plL')) $('plL').focus(); }, 50);
   }
@@ -3558,10 +3711,11 @@
       cerrarModal(); meter(c, pr, lleva);
     };
   }
-  function totalDe(carro) { return r2(carro.reduce(function (s, l) { return s + l.cantidad * l.precio; }, 0)); }
+  function totalDe(carro) { return r2(carro.reduce(function (s, l) { return s + impLinea(l); }, 0)); }
   function lineasDe(carro) {
     return carro.map(function (l) {
       const x = { codigo: l.codigo, cantidad: l.cantidad, precio: l.abierto ? l.precio : undefined, detalle: l.detalle || '' };
+      if (l.por_monto) { delete x.cantidad; x.monto = l.monto; }   // v0.4.3: por monto manda SOLO el monto; el servidor pone las libras
       if (l.presentacion) x.presentacion = l.presentacion;   // v0.4: el servidor pone precio y nombre de la presentación
       return x;
     });
@@ -3578,17 +3732,18 @@
           precio: l.precio, abierto: false, fraccion: false, presentacion: pres, ub: p.unidad || '', tope: null,
           base: px ? px.cantidad : (Number(l.cantidad_base) && Number(l.cantidad) ? r2(Number(l.cantidad_base) / Number(l.cantidad)) : 1) };
       }
+      const pm = l.por_monto === true || String(l.por_monto || '').toUpperCase() === 'SI';   // v0.4.3: renglón por monto: se reconstruye como por monto
       return { codigo: l.codigo, nombre: l.producto, detalle: l.detalle || '', unidad: l.unidad, cantidad: l.cantidad, precio: l.precio, abierto: !!p.precio_abierto, fraccion: !!p.fraccion,
-        presentacion: '', ub: p.unidad || l.unidad, tope: null, base: null };
+        presentacion: '', ub: p.unidad || l.unidad, tope: null, base: null, por_monto: pm, monto: pm ? r2(l.importe) : undefined };
     });
   }
   /** Pinta el carro en el contenedor y engancha + / − / ✕. */
   function pintarCarroEn(cont, carro, alCambiar, extra) {
     const sub = totalDe(carro);
     $(cont).innerHTML = carro.length ? carro.map(function (l, k) {
-      return '<div class="lin"><div class="nm"><b>' + esc(l.nombre) + '</b><small>' + cant(l.cantidad, l.unidad === 'unidad' ? '' : l.unidad) + ' × ' + dinero(l.precio) + '</small></div>' +
+      return '<div class="lin"><div class="nm"><b>' + esc(l.nombre) + '</b><small>' + subLinea(l) + '</small></div>' +
         (l.unidad === 'lb' || l.fraccion ? '' : '<button class="mm" data-m="' + k + '">−</button><button class="mm" data-s="' + k + '">＋</button>') +
-        '<b style="white-space:nowrap">' + dinero(l.cantidad * l.precio) + '</b><button class="mm" data-x="' + k + '" title="Quitar">✕</button></div>';
+        '<b style="white-space:nowrap">' + dinero(impLinea(l)) + '</b><button class="mm" data-x="' + k + '" title="Quitar">✕</button></div>';
     }).join('') + (extra || '') + '<div class="totalGrande"><span>Total</span><span>' + dinero(sub + (arguments[4] || 0)) + '</span></div>'
       : '<div class="ayuda">Toque los productos para agregarlos.</div>';
     $(cont).querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { const l = carro[b.dataset.m]; l.cantidad--; if (l.cantidad <= 0) carro.splice(b.dataset.m, 1); alCambiar(); }; });
@@ -3687,15 +3842,22 @@
     });
   }
   function primer(n) { return String(n || '').split(' ')[0]; }
+  // Primer nombre de un CLIENTE: con tratamiento (Doña, Don, Sra., Lic.…) se usan las dos primeras palabras («Doña Carmen»).
+  const TRATAMIENTOS = ['don', 'dona', 'sr', 'sr.', 'sra', 'sra.', 'senor', 'senora', 'srta', 'srta.', 'lic', 'lic.', 'dr', 'dr.', 'dra', 'dra.', 'ing', 'ing.', 'prof', 'profe', 'tio', 'tia'];
+  function primerCliente(n) {
+    const p = String(n || '').trim().split(/\s+/);
+    const sinTilde = String(p[0] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return TRATAMIENTOS.indexOf(sinTilde) !== -1 && p.length > 1 ? p[0] + ' ' + p[1] : p[0];
+  }
   function pedirMotivoCancelar(id, etiqueta, despues) {
     modal('<h2>Cancelar ' + esc(etiqueta) + '</h2><p style="margin-top:0">Solo si el cliente no se llevó nada. Si ya se le sirvió, mejor cóbrela o regístrela en "Sin cobro".</p>' +
       '<label class="campo">¿Por qué se cancela?<input class="ent" id="coM" maxlength="100"></label>' +
-      '<div class="botones"><button class="boton" id="coOk">Cancelar orden</button><button class="boton sec" onclick="cerrarModal()">Volver</button></div>');
+      '<div class="botones"><button class="boton" id="coCnOk">Cancelar orden</button><button class="boton sec" onclick="cerrarModal()">Volver</button></div>');
     setTimeout(function () { if ($('coM')) $('coM').focus(); }, 50);
-    $('coOk').onclick = function () {
-      $('coOk').disabled = true;
+    $('coCnOk').onclick = function () {
+      $('coCnOk').disabled = true;
       llamar('cancelarOrden', id, $('coM').value).then(function () { cerrarModal(); tostada(etiqueta + ' cancelada.'); despues(); })
-        .catch(function (e) { fallo(e); if ($('coOk')) $('coOk').disabled = false; });
+        .catch(function (e) { fallo(e); if ($('coCnOk')) $('coCnOk').disabled = false; });
     };
   }
 
@@ -3720,6 +3882,8 @@
   }
   function refrescarFila() {
     return llamar('filaCobro', CB.version).then(function (r) {
+      // v0.4.2: si el dueño cambió los dólares o el tipo de cambio, el cobro se vuelve a pintar con lo nuevo.
+      if (r.dolares && VT && JSON.stringify(r.dolares) !== JSON.stringify(VT.dolares)) { VT.dolares = r.dolares; CB.firma = ''; if (r.igual) { pintarListaCB(); pintarDetalleCB(); return; } }
       if (r.igual) { pintarListaCB(); return; }
       const antes = CB.ordenes.map(function (o) { return o.id; });
       CB.version = r.version;
@@ -3768,7 +3932,7 @@
       (VT.puede_descuento ? '<label class="campo" style="margin-top:8px">Descuento (C$) <small>solo administración</small><input class="ent" id="cbDes" inputmode="decimal" placeholder="0"></label>' : '') +
       '<div class="totalGrande"><span>Total a cobrar</span><span id="cbTot"></span></div>' +
       '<div class="chips" id="cbF" style="margin-top:8px">' + formas.map(function (f) { return '<button data-f="' + esc(f) + '" class="' + (f === CB_FORMA ? 'act' : '') + '">' + esc(f) + '</button>'; }).join('') + '</div>' +
-      '<div id="cbEf"><label class="campo">Recibe (C$)<input class="ent" id="cbR" inputmode="decimal" autocomplete="off" style="font-size:24px;font-weight:800"></label><div class="billetes" id="cbB"></div><div class="vuelto" id="cbV"></div></div>' +
+      '<div id="cbEf"><label class="campo">Recibe (C$)<input class="ent" id="cbR" inputmode="decimal" autocomplete="off" style="font-size:24px;font-weight:800"></label><div class="billetes" id="cbB"></div>' + htmlUsd('cb', VT.dolares) + '<div class="vuelto" id="cbV"></div></div>' +
       '<div id="cbBi" class="oculto"><label class="campo">Referencia <small>opcional</small><input class="ent" id="cbRef" maxlength="40"></label></div>' +
       '<div class="botones"><button class="boton" id="cbOk" style="flex:1;font-size:19px;padding:14px">✅ Cobrar y sacar comprobante</button></div>' +
       // "Corregir la orden" no aplica a los encargos del delivery (los corrige el delivery antes de pasarlos); cancelar con motivo, sí.
@@ -3783,11 +3947,9 @@
       $('cbB').querySelectorAll('button').forEach(function (b) { b.onclick = function () { $('cbR').value = b.dataset.v; vuelto(); }; });
       vuelto();
     };
-    const vuelto = function () {
-      const r = num($('cbR').value), t = total();
-      $('cbV').innerHTML = $('cbR').value === '' ? '' : r < t ? '<span style="color:#C8372D">Faltan ' + dinero(t - r) + '</span>' : 'Vuelto: ' + dinero(r - t);
-    };
+    const vuelto = function () { $('cbV').innerHTML = textoVuelto($('cbR').value, leerUsd('cb'), VT.dolares, total(), cajaCsDe(VT.caja)); };
     $('cbR').oninput = vuelto;
+    enlazarUsd('cb', vuelto);
     if ($('cbDes')) $('cbDes').oninput = calc;
     $('cbF').querySelectorAll('button').forEach(function (b) { b.onclick = function () { CB_FORMA = b.dataset.f; $('cbF').querySelectorAll('button').forEach(function (x) { x.classList.toggle('act', x === b); }); calc(); }; });
     calc();
@@ -3801,9 +3963,9 @@
     const o = ordenSel();
     if (!o || !$('cbOk') || $('cbOk').disabled) return;
     const ef = /^efectivo/i.test(CB_FORMA);
-    if (ef && $('cbR').value !== '' && num($('cbR').value) < CB.total()) return tostada('Lo recibido no alcanza.', true);
+    if (ef && ($('cbR').value !== '' || leerUsd('cb')) && equivalenteRecibido($('cbR').value, leerUsd('cb'), VT.dolares) < CB.total()) return errorSobre($('cbOk').parentNode, 'Lo recibido no alcanza.');
     $('cbOk').disabled = true; $('cbOk').textContent = 'Cobrando…';
-    llamar('cobrarPedido', o.id, { forma_pago: CB_FORMA, recibido: ef ? $('cbR').value : '', referencia_pago: ef ? '' : $('cbRef').value, descuento: $('cbDes') ? num($('cbDes').value) : 0 })
+    llamar('cobrarPedido', o.id, { forma_pago: CB_FORMA, recibido: ef ? $('cbR').value : '', recibido_usd: ef ? leerUsd('cb') : 0, referencia_pago: ef ? '' : $('cbRef').value, descuento: $('cbDes') ? num($('cbDes').value) : 0 })
       .then(function (r) {
         aplicarVenta(r);
         CB.ordenes = CB.ordenes.filter(function (x) { return x.id !== o.id; });
@@ -3812,7 +3974,11 @@
         pintarListaCB(); pintarDetalleCB();
         mostrarVentaHecha(r);
         CB_FORMA = VT.formas_pago[0];
-      }).catch(function (e) { fallo(e); if ($('cbOk')) { $('cbOk').disabled = false; $('cbOk').textContent = '✅ Cobrar y sacar comprobante'; } });
+      }).catch(function (e) {
+        if ($('cbOk')) { $('cbOk').disabled = false; $('cbOk').textContent = '✅ Cobrar y sacar comprobante'; }
+        const m = String((e && e.message) || e).replace(/^Error:\s*/, '');
+        if ($('cbOk') && m !== MSJ_CAJA_PRINCIPAL) errorSobre($('cbOk').parentNode, m); else fallo(e);   // v0.4.3: el error sale sobre el botón, no en una tostada
+      });
   }
   document.addEventListener('keydown', function (e) {
     if (VISTA !== 'cobrar' || $('entrada').offsetParent) return;
@@ -3822,13 +3988,13 @@
       const n = k + (e.key === 'ArrowDown' ? 1 : -1);
       if (n >= 0 && n < CB.ordenes.length) { e.preventDefault(); CB.sel = CB.ordenes[n].id; pintarListaCB(); pintarDetalleCB(); }
     } else if (e.key === 'F2') { e.preventDefault(); if ($('cbR')) $('cbR').focus(); }
-    else if (e.key === 'Enter' && (e.target.id === 'cbR' || e.target === document.body)) { e.preventDefault(); cobrarSel(); }
+    else if (e.key === 'Enter' && (e.target.id === 'cbR' || e.target.id === 'cbUsR' || e.target === document.body)) { e.preventDefault(); cobrarSel(); }
   });
 
   // ----- Delivery -----
   let DV = null, DV_PEST = 'tablero', DV_VERSION = '', DV_RELOJ = null, DV_VISTOS = null, DV_FORM = null, DV_AVISO = '';
   document.querySelectorAll('#pestDel button').forEach(function (b) { b.onclick = function () { pestanaDel(b.dataset.p); }; });
-  function formDelVacio() { return { id: '', cliente: { nombre: '', telefono: '', direccion: '', referencia: '', ubicacion: '' }, envio: '', nota: '', carro: [], origen: 'SISTEMA', entrega: 'DOMICILIO', hora_recoge: '', forma_pago: '', paga_con: '' }; }
+  function formDelVacio() { return { id: '', cliente: { nombre: '', telefono: '', direccion: '', referencia: '', ubicacion: '' }, envio: '', nota: '', carro: [], origen: 'SISTEMA', entrega: 'DOMICILIO', hora_recoge: '', forma_pago: '', paga_con: '', moneda_pago: '', paga_con_usd: '' }; }
   // Solo enlaces http(s) se dibujan como enlace (un "javascript:…" pegado del chat se ejecutaría al tocarlo).
   function enlaceMapa(u) { return /^https?:\/\//i.test(String(u || '')) ? ' · <a href="' + esc(u) + '" target="_blank" rel="noopener">mapa</a>' : ''; }
   function abrirDelivery(p) {
@@ -3855,6 +4021,15 @@
     document.querySelectorAll('#pestDel button').forEach(function (b) { b.classList.toggle('act', b.dataset.p === p); });
     ['tablero', 'nuevo', 'pegar', 'caja'].forEach(function (x) { $('dv-' + x).classList.toggle('oculto', x !== p); });
     ({ tablero: pintarTableroDel, nuevo: pintarNuevoDel, pegar: pintarPegar, caja: pintarCajaDel })[p]();
+    // v0.4 §2: la línea de encargos pasados a caja principal se pone al día sin volver a pintar la caja (no se borra el conteo).
+    if (p === 'caja' && DV.caja) refrescarDel().then(function () { if ($('cdEnc')) $('cdEnc').innerHTML = htmlEncCaja(); });
+  }
+  /** v0.4 §2: encargos para recoger que el delivery pasó a la caja principal (hoy): solo informativo, no es dinero de esta caja. */
+  function htmlEncCaja() {
+    const enc = DV.pedidos.filter(function (p) { return p.recoge && p.estado === 'ENTREGADO'; });
+    const pend = enc.filter(function (p) { return !p.cobrado; }).length;
+    return enc.length ? '<div class="aviso">🏪 Encargos pasados a caja principal: <b>' + enc.length + '</b> (' + dinero(enc.reduce(function (s, p) { return s + p.total; }, 0)) +
+      ') — no entran en esta caja' + (pend ? '<br><small>' + pend + ' todavía por cobrar en el mostrador.</small>' : '') + '</div>' : '';
   }
   function refrescarDel(forzar) {
     return llamar('pedidosDelivery', forzar ? '' : DV_VERSION).then(function (r) {
@@ -3874,9 +4049,7 @@
     const act = DV.pedidos.filter(function (p) { return p.estado !== 'CANCELADO' && !(p.estado === 'ENTREGADO' && p.cobrado); })
       .sort(function (a, b) { return ORDEN_DEL[a.estado] - ORDEN_DEL[b.estado] || a.ts - b.ts; });
     const hechos = DV.pedidos.filter(function (p) { return p.estado === 'CANCELADO' || (p.estado === 'ENTREGADO' && p.cobrado); });
-    $('dv-tablero').innerHTML = '<div class="botones" style="margin:0 0 10px"><button class="boton" onclick="nuevoPedidoDel()">＋ Nuevo pedido</button>' +
-      '<button class="boton sec" onclick="pestanaDel(\'pegar\')">📋 Pegar del chat</button><button class="boton sec" onclick="refrescarDel(true)">🔄</button></div>' +
-      (act.length ? '<div class="deliv">' + act.map(tarjetaDel).join('') + '</div>' : '<div class="panel" style="text-align:center">No hay pedidos activos.</div>') +
+    $('dv-tablero').innerHTML = (act.length ? '<div class="deliv">' + act.map(tarjetaDel).join('') + '</div>' : '<div class="panel" style="text-align:center">No hay pedidos activos.</div>') +
       (hechos.length ? '<h3>Terminados hoy (' + hechos.length + ')</h3><div class="lista">' + hechos.map(function (p) {
         const corregir = p.estado === 'ENTREGADO' && !p.recoge && !p.pago_caja;
         return '<div class="fila inactivo"><div class="info"><b>D' + p.id + ' · ' + esc(p.cliente_nombre) + '</b><small>' + esc(p.hora) + ' · ' + (p.recoge && p.estado === 'ENTREGADO' ? 'Cobrado en caja principal' : NOMBRE_ESTADO[p.estado]) +
@@ -3981,7 +4154,7 @@
     if (acc === 'ENTREGADO') {
       if (p.recoge) {
         // v0.4: "Pasar a caja principal": el cliente paga en el mostrador; aquí ya no se cobra. Se le avisa que ya está listo.
-        if (!confirm('¿Ya lo entregó al cajero del mostrador?\n(Encargo D' + id + ' de ' + primer(p.cliente_nombre) + ')')) return;
+        if (!confirm('¿Ya lo entregó al cajero del mostrador?\n(Encargo D' + id + ' de ' + primerCliente(p.cliente_nombre) + ')')) return;
         return moverDel(id, 'ENTREGADO', '', 'listo_recoger');
       }
       // Se confirma quién lo entregó (a veces sale uno y entrega otro): cuenta para el pago al cerrar la caja.
@@ -3993,8 +4166,10 @@
       if (p.recoge) return avisoCajaPrincipal();   // v0.4: no se ofrece, pero por si acaso
       if (!DV.caja) { tostada('Primero abra la caja del delivery.', true); return pestanaDel('caja'); }
       if (!p.recoge && !p.envio && !confirm('Este pedido no tiene envío. ¿Cobrarlo sin envío?')) return;
-      return ventanaCobro({ titulo: 'Cobrar D' + p.id + ' · ' + p.cliente_nombre + (p.recoge ? ' (encargo)' : ''), total: p.total, descuento: DV.puede_descuento, formas: DV.formas_pago,
-        forma: formaDeCaja(p.forma_pago, DV.formas_pago), recibido: p.forma_pago === 'EFECTIVO' ? (p.paga_con || p.total) : '',
+      return ventanaCobro({ titulo: 'Cobrar D' + p.id + ' · ' + p.cliente_nombre + (p.recoge ? ' (encargo)' : ''), total: p.total, descuento: DV.puede_descuento, formas: DV.formas_pago, dolares: DV.dolares,
+        forma: formaDeCaja(p.forma_pago, DV.formas_pago), recibido: p.forma_pago === 'EFECTIVO' && p.moneda_pago === 'MIXTO' ? (p.paga_con || '') : p.forma_pago === 'EFECTIVO' && p.moneda_pago !== 'USD' ? (p.paga_con || p.total) : '',
+        usd0: p.forma_pago === 'EFECTIVO' && p.moneda_pago === 'USD' ? p.paga_con : p.forma_pago === 'EFECTIVO' && p.moneda_pago === 'MIXTO' ? p.paga_con_usd : '',
+        mixto: p.forma_pago === 'EFECTIVO' && p.moneda_pago === 'MIXTO', cajaCs: cajaCsDe(DV.caja),
         alConfirmar: function (pago) {
           // area 'Delivery': así el servidor sabe que el Admin cobra desde esta pantalla (caja del delivery).
           return llamar('cobrarPedido', p.id, Object.assign({ area: 'Delivery' }, pago)).then(function (r) {
@@ -4009,7 +4184,7 @@
     }
     if (acc === 'COMPROBANTE') return verComprobante(p.numero_venta);
     if (acc === 'CUENTA') {
-      const t = '¡Hola ' + primer(p.cliente_nombre) + '! Su pedido D' + p.id + ' en ' + (DV.negocio || 'La Casa del Frito') + ':\n' +
+      const t = '¡Hola ' + primerCliente(p.cliente_nombre) + '! Su pedido D' + p.id + ' en ' + (DV.negocio || 'La Casa del Frito') + ':\n' +
         p.lineas.map(function (l) { return '• ' + cantLinea(l) + ' ' + l.producto + ' — ' + dinero(l.importe); }).join('\n') +
         (p.envio ? '\n• Envío — ' + dinero(p.envio) : '') + '\n*Total: ' + dinero(p.total) + '*\n' +
         (p.recoge ? '🏠 Para recoger' + (p.hora_recoge ? ' (' + p.hora_recoge + ')' : '') : '📍 ' + p.direccion) +
@@ -4019,7 +4194,7 @@
     if (acc === 'EDITAR') {
       DV_FORM = { id: p.id, cliente: { nombre: p.cliente_nombre, telefono: p.telefono, direccion: p.direccion, referencia: p.referencia, ubicacion: p.ubicacion },
         envio: p.envio, nota: p.nota, carro: carroDesde(p.lineas, DV.menu), origen: p.origen, entrega: p.recoge ? 'RECOGE' : 'DOMICILIO', hora_recoge: p.hora_recoge || '',
-        estado: p.estado, forma_pago: p.forma_pago || '', paga_con: p.paga_con || '' };
+        estado: p.estado, forma_pago: p.forma_pago || '', paga_con: p.paga_con || '', moneda_pago: p.moneda_pago || '', paga_con_usd: p.paga_con_usd || '' };
       DV_AVISO = '';
       return pestanaDel('nuevo');
     }
@@ -4044,8 +4219,16 @@
   /** Renglón de la tarjeta: cómo paga y, si es billetera o transferencia, si ya llegó el comprobante. */
   function pagoCorto(p) {
     if (p.forma_pago === 'EFECTIVO') {
+      if (p.moneda_pago === 'MIXTO') {   // v0.4.3: córdobas + dólares
+        const eq = r2((p.paga_con_usd || 0) * ((DV.dolares || {}).tipo_cambio || 36)), vu = r2(p.paga_con + eq - p.total);
+        return '💵 <b>Paga con ' + dinero(p.paga_con) + ' + US$' + p.paga_con_usd + ' (' + dinero(eq) + ')</b> ' + (vu >= 0 ? '<small>· vuelto aprox. <b>' + dinero(vu) + '</b> en córdobas</small>' : '<small style="color:#C8372D">¡no alcanza para ' + dinero(p.total) + '!</small>');
+      }
       if (!p.paga_con) return '💵 <b>Efectivo exacto</b> <small>(sin vuelto)</small>';
       const v = r2(p.paga_con - p.total);
+      if (p.moneda_pago === 'USD') {
+        const eq = r2(p.paga_con * ((DV.dolares || {}).tipo_cambio || 36)), vu = r2(eq - p.total);
+        return '💵 <b>Paga con US$' + p.paga_con + ' (' + dinero(eq) + ')</b> ' + (vu >= 0 ? '<small>· vuelto aprox. <b>' + dinero(vu) + '</b> en córdobas</small>' : '<small style="color:#C8372D">¡no alcanza para ' + dinero(p.total) + '!</small>');
+      }
       return '💵 <b>Efectivo · paga con ' + dinero(p.paga_con) + '</b> ' + (v >= 0 ? '<small>→ llevar vuelto <b>' + dinero(v) + '</b></small>' : '<small style="color:#C8372D">¡no alcanza para ' + dinero(p.total) + '!</small>');
     }
     return FORMA_CLIENTE[p.forma_pago] + ' · ' + (p.pago_recibido ? '<b style="color:#4E7D1E">📸 comprobante recibido</b>' : p.cobrado ? 'cobrado' : '<b style="color:#C8372D">⏳ esperando foto del comprobante</b>');
@@ -4055,8 +4238,16 @@
     const d = DV.pago_datos || {}, tot = dinero(p.total);
     if (p.forma_pago === 'EFECTIVO') {
       if (p.recoge) return '💵 Paga en efectivo al recoger: ' + tot + '.';
+      if (p.moneda_pago === 'MIXTO') {   // v0.4.3
+        const eq = r2((p.paga_con_usd || 0) * ((DV.dolares || {}).tipo_cambio || 36)), vu = r2(p.paga_con + eq - p.total);
+        return vu >= 0 ? '💵 Pago en efectivo al recibir: paga con ' + dinero(p.paga_con) + ' + US$' + p.paga_con_usd + ' (' + dinero(eq) + ') y le llevamos su vuelto en córdobas (aprox. ' + dinero(vu) + ').' : '💵 Pago en efectivo al recibir: ' + tot + '.';
+      }
       if (!p.paga_con) return '💵 Pago en efectivo al recibir. Por favor tenga el monto exacto: ' + tot + '.';
       const v = r2(p.paga_con - p.total);
+      if (p.moneda_pago === 'USD') {
+        const eq = r2(p.paga_con * ((DV.dolares || {}).tipo_cambio || 36)), vu = r2(eq - p.total);
+        return vu >= 0 ? '💵 Pago en efectivo al recibir: paga con US$' + p.paga_con + ' (' + dinero(eq) + ') y le llevamos su vuelto en córdobas (aprox. ' + dinero(vu) + ').' : '💵 Pago en efectivo al recibir: ' + tot + '.';
+      }
       return v >= 0 ? '💵 Pago en efectivo al recibir: paga con ' + dinero(p.paga_con) + ' y le llevamos su vuelto de ' + dinero(v) + '.'
         : '💵 Pago en efectivo al recibir: ' + tot + '.';
     }
@@ -4075,7 +4266,7 @@
   function textoAviso(tipo, p, extra) {
     extra = extra || {};
     const marcas = {
-      nombre: primer(p.cliente_nombre), pedido: 'D' + p.id, negocio: DV.negocio || 'La Casa del Frito', total: dinero(p.total), envio: dinero(p.envio),
+      nombre: primerCliente(p.cliente_nombre), pedido: 'D' + p.id, negocio: DV.negocio || 'La Casa del Frito', total: dinero(p.total), envio: dinero(p.envio),
       detalle: p.lineas.map(function (l) { return ('• ' + cantLinea(l) + ' ' + l.producto).replace(/\s+/g, ' ') + ' — ' + dinero(l.importe); }).join('\n') + (p.envio ? '\n• Envío — ' + dinero(p.envio) : ''),
       pago: textoPago(p, tipo), motivo: extra.motivo || '', repartidor: p.repartidor_libre ? p.repartidor_nombre : primer(p.repartidor_nombre) || 'nuestro motorizado'
     };
@@ -4098,24 +4289,24 @@
     const dom = !p.recoge;
     modal('<h2>✅ Aceptar D' + p.id + ' · ' + esc(p.cliente_nombre) + '</h2>' +
       '<ul style="margin:0 0 8px;padding-left:18px">' + p.lineas.map(function (l) { return '<li>' + esc(cantLinea(l)) + ' ' + esc(l.producto) + ' — ' + dinero(l.importe) + '</li>'; }).join('') + '</ul>' +
-      (dom ? '<label class="campo">Envío (C$) <small>según la zona: ' + esc(p.direccion) + '</small><input class="ent" id="acE" inputmode="decimal" value="' + esc(p.envio || DV.envio_sugerido || '') + '"></label>' : '<p>🏠 Lo pasa a recoger' + (p.hora_recoge ? ' (' + esc(p.hora_recoge) + ')' : '') + ', sin envío.</p>') +
-      '<div class="totalGrande" style="margin:0 0 8px"><span>Total</span><span id="acT"></span></div><div id="acP"></div>' +
-      '<div class="botones"><button class="boton" id="acOk" style="flex:1">✅ Aceptar y avisar</button><button class="boton sec" onclick="cerrarModal()">Volver</button></div>');
+      (dom ? '<label class="campo">Envío (C$) <small>según la zona: ' + esc(p.direccion) + '</small><input class="ent" id="dvE" inputmode="decimal" value="' + esc(p.envio || DV.envio_sugerido || '') + '"></label>' : '<p>🏠 Lo pasa a recoger' + (p.hora_recoge ? ' (' + esc(p.hora_recoge) + ')' : '') + ', sin envío.</p>') +
+      '<div class="totalGrande" style="margin:0 0 8px"><span>Total</span><span id="dvT"></span></div><div id="dvP"></div>' +
+      '<div class="botones"><button class="boton" id="dvOk" style="flex:1">✅ Aceptar y avisar</button><button class="boton sec" onclick="cerrarModal()">Volver</button></div>');
     const calc = function () {
-      const q = Object.assign({}, p, { envio: dom ? num($('acE').value) : 0 });
+      const q = Object.assign({}, p, { envio: dom ? num($('dvE').value) : 0 });
       q.total = r2(p.subtotal + q.envio);
-      $('acT').textContent = dinero(q.total);
-      $('acP').innerHTML = p.forma_pago ? '<div class="aviso">' + pagoCorto(q) + '</div>' : '<div class="aviso">El cliente no dijo cómo paga: pregúnteselo en el chat.</div>';
+      $('dvT').textContent = dinero(q.total);
+      $('dvP').innerHTML = p.forma_pago ? '<div class="aviso">' + pagoCorto(q) + '</div>' : '<div class="aviso">El cliente no dijo cómo paga: pregúnteselo en el chat.</div>';
     };
-    if (dom) $('acE').oninput = calc;
+    if (dom) $('dvE').oninput = calc;
     calc();
-    $('acOk').onclick = function () {
-      if (dom && $('acE').value.trim() === '' && !confirm('¿Aceptarlo sin envío?')) return;
-      $('acOk').disabled = true;
-      llamar('aceptarPedido', p.id, dom ? $('acE').value.trim().replace(',', '.') : '').then(function (r) {
+    $('dvOk').onclick = function () {
+      if (dom && $('dvE').value.trim() === '' && !confirm('¿Aceptarlo sin envío?')) return;
+      $('dvOk').disabled = true;
+      llamar('aceptarPedido', p.id, dom ? $('dvE').value.trim().replace(',', '.') : '').then(function (r) {
         DV.pedidos = r.pedidos; if (r.menu) DV.menu = r.menu; DV_VERSION = ''; infoDel(); pintarTableroDel();
         avisoCliente('aceptado', r.pedido || p);
-      }).catch(function (e) { fallo(e); if ($('acOk')) $('acOk').disabled = false; });
+      }).catch(function (e) { fallo(e); if ($('dvOk')) $('dvOk').disabled = false; });
     };
   }
   /** Rechazar (pedido nuevo) o cancelar (ya aceptado): motivo rápido y mensaje al cliente. */
@@ -4142,10 +4333,10 @@
     };
   }
   function verComprobante(numero) {
-    modal('<h2>Comprobante ' + esc(numero) + '</h2><div id="vhComp" class="ayuda">Preparando…</div><div class="botones"><button class="boton sec" onclick="cerrarModal()">Cerrar</button></div>');
+    modal('<h2>Comprobante ' + esc(numero) + '</h2><div id="dvComp" class="ayuda">Preparando…</div><div class="botones"><button class="boton sec" onclick="cerrarModal()">Cerrar</button></div>');
     llamar('comprobanteVenta', numero).then(function (d) { return prepararImagen(d, true); })
-      .then(function (c) { ULTIMO = c; if ($('vhComp')) mostrarCompartir($('vhComp'), c); })
-      .catch(function (e) { if ($('vhComp')) $('vhComp').innerHTML = '<div class="error">' + esc(e.message) + '</div>'; });
+      .then(function (c) { ULTIMO = c; if ($('dvComp')) mostrarCompartir($('dvComp'), c); })
+      .catch(function (e) { if ($('dvComp')) $('dvComp').innerHTML = '<div class="error">' + esc(e.message) + '</div>'; });
   }
   function nuevoPedidoDel() { DV_FORM = formDelVacio(); DV_AVISO = ''; pestanaDel('nuevo'); }
   function leerFormDel() {
@@ -4153,6 +4344,7 @@
     DV_FORM.cliente = { telefono: $('nvT').value, nombre: $('nvN').value, direccion: $('nvD').value, referencia: $('nvR').value, ubicacion: $('nvU').value };
     DV_FORM.envio = $('nvE').value; DV_FORM.nota = $('nvO').value; DV_FORM.hora_recoge = $('nvH').value;
     if ($('nvPC')) DV_FORM.paga_con = $('nvPC').value;
+    if ($('nvPU')) DV_FORM.paga_con_usd = $('nvPU').value.replace(/D/g, '');
   }
   function pintarNuevoDel() {
     const f = DV_FORM, c = f.cliente, rec = f.entrega === 'RECOGE';
@@ -4176,7 +4368,11 @@
       // v0.4.1: cómo paga el cliente (sale en la tarjeta, en los mensajes y ya marcado al cobrar).
       '<div style="font-weight:700;margin-bottom:6px">¿Cómo paga el cliente?</div><div class="chips" id="nvFP" style="margin:0 0 8px">' + Object.keys(FORMA_CLIENTE).map(function (k) {
         return '<button data-fp="' + k + '" class="' + (f.forma_pago === k ? 'act' : '') + '">' + FORMA_CLIENTE[k] + '</button>'; }).join('') + '</div>' +
-      '<label class="campo' + (f.forma_pago === 'EFECTIVO' ? '' : ' oculto') + '" id="nvPCc">Paga con (C$) <small>vacío = exacto, sin vuelto</small><input class="ent" id="nvPC" inputmode="decimal" value="' + esc(f.paga_con || '') + '"></label>' +
+      '<div class="' + (f.forma_pago === 'EFECTIVO' ? '' : 'oculto') + '" id="nvPCc">' +
+      (DV.dolares && DV.dolares.acepta ? '<div class="chips" id="nvMon" style="margin:0 0 6px"><button data-mo="" class="' + (f.moneda_pago === 'USD' || f.moneda_pago === 'MIXTO' ? '' : 'act') + '">En córdobas</button><button data-mo="USD" class="' + (f.moneda_pago === 'USD' ? 'act' : '') + '">En dólares</button><button data-mo="MIXTO" class="' + (f.moneda_pago === 'MIXTO' ? 'act' : '') + '">Las dos</button></div>' : '') +
+      '<label class="campo">Paga con (' + (f.moneda_pago === 'USD' && DV.dolares && DV.dolares.acepta ? 'US$' : 'C$') + ') <small>' + (f.moneda_pago === 'MIXTO' ? 'córdobas que entrega' : 'vacío = exacto, sin vuelto') + (f.moneda_pago === 'USD' && DV.dolares && DV.dolares.acepta ? ' · billetes de 1, 5, 10 y 20' : '') + '</small>' +
+      '<input class="ent" id="nvPC" inputmode="' + (f.moneda_pago === 'USD' ? 'numeric' : 'decimal') + '" value="' + esc(f.paga_con || '') + '"></label>' +
+      (f.moneda_pago === 'MIXTO' && DV.dolares && DV.dolares.acepta ? '<label class="campo">Y en dólares (US$) <small>enteros · billetes de 1, 5, 10 y 20</small><input class="ent" id="nvPU" inputmode="numeric" pattern="[0-9]*" maxlength="5" value="' + esc(f.paga_con_usd || '') + '"></label>' : '') + '</div>' +
       '<div class="barraVenta"><button class="boton" id="nvOk"></button></div></div></div>';
     pintarSelector({ cont: 'nvProd', menu: DV.menu, carro: f.carro, revisar: true, editando: !!f.id, sin_existencia: DV.sin_existencia, alCambiar: function () { leerFormDel(); pintarCarroDel(); } });
     $('nvT').onchange = function () {
@@ -4196,6 +4392,9 @@
         $('nvPCc').classList.toggle('oculto', DV_FORM.forma_pago !== 'EFECTIVO');
       };
     });
+    if ($('nvMon')) $('nvMon').querySelectorAll('button').forEach(function (b) {
+      b.onclick = function () { leerFormDel(); DV_FORM.moneda_pago = b.dataset.mo; pintarNuevoDel(); };
+    });
     pintarCarroDel();
   }
   function pintarCarroDel() {
@@ -4211,7 +4410,9 @@
     $('nvOk').disabled = true;
     llamar('guardarPedidoDelivery', { id: f.id, cliente: f.cliente, lineas: lineasDe(f.carro), envio: rec ? 0 : (f.envio === '' ? DV.envio_sugerido : f.envio), nota: f.nota, origen: f.origen,
       entrega: rec ? 'RECOGE' : 'DOMICILIO', hora_recoge: rec ? f.hora_recoge : '',
-      forma_pago: f.forma_pago, paga_con: f.forma_pago === 'EFECTIVO' ? String(f.paga_con || '').trim().replace(',', '.') : '' })
+      forma_pago: f.forma_pago, paga_con: f.forma_pago === 'EFECTIVO' ? String(f.paga_con || '').trim().replace(',', '.') : '',
+      moneda_pago: f.forma_pago === 'EFECTIVO' && (f.moneda_pago === 'USD' || f.moneda_pago === 'MIXTO') && DV.dolares && DV.dolares.acepta ? f.moneda_pago : '',
+      paga_con_usd: f.forma_pago === 'EFECTIVO' && f.moneda_pago === 'MIXTO' ? String(f.paga_con_usd || '').trim() : '' })
       .then(function (r) {
         DV.pedidos = r.pedidos; DV_VERSION = '';
         if (r.menu) DV.menu = r.menu;   // el menú con lo disponible viene en la respuesta (antes se pedía deliveryInicio otra vez)
@@ -4337,8 +4538,6 @@
     }
     const r = DV.caja.resumen, rp = DV.caja.repartos || { lista: [], sin_repartidor: 0, modo: 'ENVIO' };
     // v0.4 §2: los encargos para recoger que este delivery pasó a la caja principal (hoy): solo informativo, no es dinero de esta caja.
-    const encCaja = DV.pedidos.filter(function (p) { return p.recoge && p.estado === 'ENTREGADO'; });
-    const encPend = encCaja.filter(function (p) { return !p.cobrado; }).length;
     const dPag = DV_PAGOS || {};   // lo que la persona ya escribió en los pagos (se conserva al redibujar)
     // Entregas por persona: el pago sugerido se puede cambiar (el dueño también reparte y puede ponerse 0).
     const tablaRep = rp.lista.length ? '<div class="lista">' +
@@ -4346,7 +4545,7 @@
         const v = dPag[x.repartidor] !== undefined ? dPag[x.repartidor] : x.sugerido;
         return '<div class="fila" style="align-items:flex-start"><div class="info"><b>' + esc(x.nombre) + '</b><small>' + x.entregas + ' entrega' + (x.entregas === 1 ? '' : 's') +
           ' · envíos ' + dinero(x.envios) + '<br>' + x.pedidos.map(function (d) {
-            return 'D' + d.id + ' ' + esc(primer(d.cliente)) + ' (' + dinero(d.envio).replace('.00', '') + (d.cobrado ? '' : ', sin cobrar') + ')'; }).join(' · ') + '</small></div>' +
+            return 'D' + d.id + ' ' + esc(primerCliente(d.cliente)) + ' (' + dinero(d.envio).replace('.00', '') + (d.cobrado ? '' : ', sin cobrar') + ')'; }).join(' · ') + '</small></div>' +
           '<label style="font-size:12px;font-weight:700;text-align:right">Pagar C$<input class="ent" style="width:84px;text-align:right;margin:2px 0 0" id="cdP' + k + '" inputmode="decimal" value="' + esc(v) + '"></label></div>';
       }).join('') + '</div><div class="totalGrande" style="margin:8px 0"><span>Total a pagar</span><span id="cdPT"></span></div>' +
       '<div class="ayuda" style="text-align:left">Pago sugerido: ' + (rp.modo === 'FIJO' ? dinero(rp.monto_fijo) + ' por entrega' : 'el envío de cada entrega') +
@@ -4354,20 +4553,21 @@
       : '<div class="ayuda" style="text-align:left">No hay entregas a domicilio pendientes de pago.</div>';
     cont.innerHTML = '<div class="panel"><h3 style="margin-top:0">Caja delivery ' + DV.caja.id + '</h3><div class="ayuda" style="text-align:left">Abierta ' + esc(DV.caja.apertura) + (DV.caja.abrio ? ' por ' + esc(DV.caja.abrio) : '') + '</div>' +
       '<table class="resumen" style="width:100%;border-collapse:collapse"><tr><td>Efectivo inicial</td><td>' + dinero(r.monto_inicial) + '</td></tr><tr><td>Cobrado en efectivo</td><td>' + dinero(r.efectivo_ventas) + '</td></tr>' +
+      (r.usd_esperado ? '<tr><td><span style="color:#C8372D">Dólares recibidos (US$ ' + r.usd_esperado + ', se guardan aparte)</span></td><td><span style="color:#C8372D">−' + dinero(r.usd_en_cordobas) + '</span></td></tr>' : '') +
       (r.salidas_lista || []).map(function (s) { return '<tr><td><span style="color:#C8372D">− ' + esc(s.que) + '</span></td><td>' + dinero(-s.monto) + '</td></tr>'; }).join('') +
       '<tr id="cdPagoFila"><td><span style="color:#C8372D">− Pago a repartidores</span></td><td id="cdPagoTot"></td></tr>' +
-      '<tr><td><b>Efectivo que debe haber</b></td><td><b id="cdEsp"></b></td></tr>' +
+      '<tr><td><b>' + (r.usd_esperado ? 'Córdobas en caja' : 'Efectivo que debe haber') + '</b></td><td><b id="cdEsp"></b></td></tr>' +
+      (r.usd_esperado ? '<tr><td><b>Dólares en caja</b></td><td><b>US$ ' + r.usd_esperado + '</b></td></tr><tr><td>Equivalente total</td><td id="cdEq"></td></tr>' : '') +
       Object.keys(r.por_forma || {}).map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + dinero(r.por_forma[k]) + '</td></tr>'; }).join('') +
       '<tr><td>Pedidos cobrados</td><td>' + r.ventas + '</td></tr>' +
       Object.keys(r.por_canal || {}).map(function (k) { return '<tr><td style="padding-left:16px;color:#7a6552">' + esc(k === 'Encargo' ? 'Encargos (lo recogen)' : k) + '</td><td>' + dinero(r.por_canal[k]) + '</td></tr>'; }).join('') +
       '<tr><td><b>Total vendido</b></td><td>' + dinero(r.total_vendido) + '</td></tr></table>' +
-      (encCaja.length ? '<div class="aviso">🏪 Encargos pasados a caja principal: <b>' + encCaja.length + '</b> (' + dinero(encCaja.reduce(function (s, p) { return s + p.total; }, 0)) +
-        ') — no entran en esta caja' + (encPend ? '<br><small>' + encPend + ' todavía por cobrar en el mostrador.</small>' : '') + '</div>' : '') + '</div>' +
+      '<div id="cdEnc">' + htmlEncCaja() + '</div></div>' +
       '<div class="panel"><h3 style="margin-top:0">🛵 Entregas por persona</h3>' +
       (rp.sin_repartidor ? '<div class="aviso">⚠️ Hay ' + rp.sin_repartidor + ' entrega(s) sin repartidor (' + rp.sin_lista.map(function (d) { return 'D' + d.id; }).join(', ') +
         '). Márquelas con 👤 en Pedidos para que entren en el pago.</div>' : '') + tablaRep + '</div>' +
       '<div class="panel"><h3 style="margin-top:0">Cerrar la caja del delivery</h3><p style="margin-top:0">Cuente <b>solo billetes y monedas</b> (incluido lo que trajeron los repartidores, ya pagados).</p>' +
-      htmlConteo('cd', r.por_forma) + '<label class="campo">Nota <small>opcional</small><input class="ent" id="cdN" maxlength="120"></label>' +
+      htmlConteo('cd', r.por_forma, r.usd_esperado || (DV.dolares && DV.dolares.acepta) ? { esperado: r.usd_esperado || 0 } : null) + '<label class="campo">Nota <small>opcional</small><input class="ent" id="cdN" maxlength="120"></label>' +
       '<button class="boton" id="cdCerrar">🔒 Cerrar caja del delivery</button></div>';
     const pagos = function () {
       return rp.lista.map(function (x, k) { return { repartidor: x.repartidor, nombre: x.nombre, monto: $('cdP' + k) ? $('cdP' + k).value.trim().replace(',', '.') : '0' }; });
@@ -4381,12 +4581,14 @@
       $('cdPagoTot').textContent = dinero(-t);
       $('cdPagoFila').classList.toggle('oculto', !rp.lista.length);
       $('cdEsp').textContent = dinero(esperado());
+      if ($('cdEq')) $('cdEq').textContent = dinero(r2(esperado() + r.usd_en_cordobas));
       DV_PAGOS = {}; pagos().forEach(function (p) { DV_PAGOS[p.repartidor] = p.monto; });
       calc();
     };
     rp.lista.forEach(function (x, k) { $('cdP' + k).oninput = vivo; });
     vivo();
     $('cdCerrar').onclick = function () {
+      if (conteoNegativo('cd')) return tostada('Las cantidades no pueden ser menores que 0.', true);
       const ps = pagos();
       if (ps.some(function (p) { return p.monto !== '' && (isNaN(Number(p.monto)) || Number(p.monto) < 0); })) return tostada('Revise los pagos: deben ser números de 0 en adelante.', true);
       // Los encargos para recoger no se cobran aquí (caja principal): no cuentan como "sin cobrar" de esta caja.
@@ -4396,7 +4598,7 @@
       if (ps.length && !confirm('Se pagará:\n' + ps.map(function (p) { return '• ' + p.nombre + ': ' + dinero(num(p.monto)); }).join('\n') + '\nTotal ' + dinero(totalPagos()) + ' del efectivo de la caja. ¿Seguir?')) return;
       if (!conteoEscrito('cd') && !confirm('No escribió billetes ni monedas. ¿Cerrar con C$ 0 en efectivo?')) return;
       $('cdCerrar').disabled = true;
-      llamar('cerrarCaja', '', $('cdN').value, leerConteo('cd'), 'Delivery', ps.map(function (p) { return { repartidor: p.repartidor, monto: p.monto === '' ? 0 : p.monto }; }))
+      llamar('cerrarCaja', '', $('cdN').value, leerConteo('cd'), 'Delivery', ps.map(function (p) { return { repartidor: p.repartidor, monto: p.monto === '' ? 0 : p.monto }; }), leerConteoUsd('cd'))
         .then(function (x) { DV_PAGOS = null; mostrarCierre(x); return recargarCajaDel(); })
         .catch(function (e) { fallo(e); if ($('cdCerrar')) $('cdCerrar').disabled = false; });
     };
@@ -4492,14 +4694,16 @@
     const k = t.kpi, hoy = t.dia === fechaTxt(new Date());
     const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
     const horas = t.horas.filter(function (h) { return h.hora >= 6 && h.hora <= 20 || h.total; });
-    const p = function (tit, cuerpo) { return '<div class="panel"><h3 style="margin-top:0">' + tit + '</h3>' + cuerpo + '</div>'; };
+    const p = function (tit, cuerpo) { return '<div class="panel' + (/^(Repartidores|Inventario)/.test(tit) ? ' ancho2' : '') + '"><h3 style="margin-top:0">' + tit + '</h3>' + cuerpo + '</div>'; };
     $('tbCuerpo').innerHTML =
       '<div class="ayuda" style="text-align:left">' + (hoy ? 'Hoy, al momento (' + esc(t.hora) + '). Se actualiza solo cada minuto.' : 'Día ' + esc(t.dia)) + '</div>' +
       '<div class="kpis">' +
       '<div class="kpi fuerte"><small>Vendido</small><b>' + dinero(k.total) + '</b><i>' + k.ventas + ' venta(s) · promedio ' + dinero(k.ticket) + '</i></div>' +
       '<div class="kpi"><small>Delivery</small><b>' + dinero(k.delivery_total) + '</b><i>' + k.delivery + ' a domicilio' + (k.recoge ? ' · ' + k.recoge + ' encargo(s) para recoger' : '') +
         (k.pago_delivery ? ' · pagado a repartidores ' + dinero(k.pago_delivery) : '') + '</i></div>' +
-      '<div class="kpi"><small>Esperando caja ahora</small><b>' + k.por_cobrar + '</b><i>' + dinero(k.por_cobrar_total) + '</i></div>' +
+      '<div class="kpi"><small>Esperando caja ahora</small><b>' + k.por_cobrar + '</b><i>' + dinero(k.por_cobrar_total) +
+        // v0.4.2: de dónde salen (solo las partes que no son 0).
+        (k.por_cobrar ? '<br>' + [k.por_cobrar_mostrador ? k.por_cobrar_mostrador + ' del mostrador' : '', k.por_cobrar_encargos ? k.por_cobrar_encargos + ' ' + (k.por_cobrar_encargos === 1 ? 'encargo servido' : 'encargos servidos') + ' por delivery' : ''].filter(Boolean).join(' · ') : '') + '</i></div>' +
       // v0.4 §2: encargos para recoger que sirvió el delivery y se cobran en la caja principal (no son dinero del delivery).
       (t.encargos_delivery ? '<div class="kpi"><small>Encargos servidos por delivery</small><b>' + t.encargos_delivery.n + '</b><i>' + dinero(t.encargos_delivery.total) +
         ' · cobrados en caja principal ' + t.encargos_delivery.cobrados + ' (' + dinero(t.encargos_delivery.cobrados_total) + ')' +
@@ -4522,13 +4726,13 @@
           '</td><td class="n">' + dinero(x.pagado) + '</td></tr>'; }).join('') + '</table>' : '<div class="ayuda">Sin entregas a domicilio.</div>') +
       p('Cajas', t.cajas.length ? '<div class="lista">' + t.cajas.map(function (c) {
         return '<div class="fila' + (c.estado === 'ABIERTA' ? '' : ' inactivo') + '"><div class="info"><b>' + esc(c.area) + ' · ' + esc(primer(c.usuario)) + '</b><small>' + (c.estado === 'ABIERTA' ? 'Abierta desde ' + esc(c.apertura) +
-          ' · vendido ' + dinero(c.vendido) + ' · efectivo ' + dinero(c.efectivo) + (c.otros ? ' · otros ' + dinero(c.otros) : '') : 'Cerrada ' + esc(c.cierre) + ' · contó ' + dinero(c.efectivo) +
+          ' · vendido ' + dinero(c.vendido) + ' · efectivo ' + dinero(c.efectivo) + (c.usd ? ' · US$ ' + c.usd : '') + (c.otros ? ' · otros ' + dinero(c.otros) : '') : 'Cerrada ' + esc(c.cierre) + ' · contó ' + dinero(c.efectivo) + (c.usd ? ' · US$ ' + c.usd + (c.diferencia_usd ? ' (' + (c.diferencia_usd < 0 ? 'faltaron ' : 'sobraron ') + 'US$ ' + Math.abs(c.diferencia_usd) + ')' : '') : '') +
             (c.pago_delivery ? ' · pagó a repartidores ' + dinero(c.pago_delivery) : '')) + '</small></div>' +
           (c.diferencia === null ? '<span class="etq verde">Abierta</span>' : '<b style="color:' + (c.diferencia < 0 ? '#C8372D' : '#4E7D1E') + '">' + (c.diferencia === 0 ? 'Cuadró' : dinero(c.diferencia)) + '</b>') + '</div>';
       }).join('') + '</div>' : '<div class="ayuda">No se abrió caja.</div>') +
       p('Inventario (sucursal)', t.existencias.length ? '<table class="tabla"><tr><th>Producto</th><th class="n">Producido</th><th class="n">Vendido</th><th class="n">Queda</th></tr>' + t.existencias.map(function (x) {
         const u = x.unidad === 'unidad' ? '' : x.unidad;
-        return '<tr><td>' + esc(x.nombre) + '</td><td class="n">' + esc(cant(x.producido, u)) + '</td><td class="n">' + esc(cant(x.vendido, u)) + '</td><td class="n" style="' + (x.hay <= 0 ? 'color:#C8372D;font-weight:800' : '') + '">' + esc(cant(x.hay, u)) + '</td></tr>'; }).join('') + '</table>' : '<div class="ayuda">Sin productos con control de existencia.</div>') +
+        return '<tr><td>' + esc(x.nombre) + '</td><td class="n">' + esc(cant(x.producido, u)) + '</td><td class="n">' + esc(cant(x.vendido, u)) + '</td><td class="n" style="' + (x.hay <= 0 ? 'color:#C8372D;font-weight:800' : '') + '">' + esc(cant(x.hay, u)) + '</td></tr>'; }).join('') + '</table><div class="ayuda" style="text-align:left;color:var(--gris);font-size:13px;margin-top:6px">Queda = lo que hay ahora (producción, ventas, sin cobro, traslados, mermas y conteos).</div>' : '<div class="ayuda">Sin productos con control de existencia.</div>') +
       p('Sin cobro del día', t.sin_cobro.length ? '<div class="lista">' + t.sin_cobro.map(function (s) {
         return '<div class="fila"><div class="info"><b>' + esc(s.motivo) + '</b><small>' + esc(s.beneficiario) + ' · ' + esc(s.detalle) + ' · ' + esc(primer(s.usuario)) + '</small></div><b>' + (s.costo === null ? '—' : dinero(s.costo)) + '</b>' +
           (s.estado === 'PENDIENTE' ? '<span class="etq">Por aprobar</span>' : '') + '</div>'; }).join('') + '</div>' : '<div class="ayuda">Nada salió sin cobro.</div>') +

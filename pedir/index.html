@@ -145,6 +145,9 @@
   .cuenta{background:#fff;border:1px dashed var(--naranja);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:15px}
   .cuenta div{display:flex;justify-content:space-between;gap:8px;padding:2px 0}.cuenta b{text-align:right;word-break:break-all}
   .pagoTxt{font-size:14px;margin:6px 0 0}
+  .aviso-p{margin:4px 0 14px;font-size:16px}
+  #opMon,#opRap{margin-bottom:8px}
+  .vivo{font-weight:800;min-height:20px}
 </style>
 </head>
 <body>
@@ -201,6 +204,7 @@
 <div class="pie oculto" id="pie"><div class="in"><div class="t"><b id="pieTot">C$ 0.00</b><small id="pieN">0 productos · más envío</small></div>
   <button class="boton tocable" id="pieBtn">Continuar ➜</button></div></div>
 <div class="velo oculto" id="velo"><div class="hoja" id="hoja" role="dialog" aria-modal="true" aria-labelledby="hojaTit"></div></div>
+<div class="velo oculto" id="veloP"><div class="hoja" id="hojaP" role="dialog" aria-modal="true" aria-labelledby="pTit"></div></div>
 <footer>La Casa del Frito · León, Nicaragua</footer>
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbzHYVkThjM6wdyHPoR5MUnHCitB-EwkZ_Uz8JPGmG5yfWCiPulzqlGxZEDNSrknTq_Meg/exec';
@@ -220,7 +224,14 @@
   // CANT guarda una entrada por renglón del carro: "codigo" (cantidad libre) o "codigo||Presentación" (cuántas de esa presentación).
   let M = null, CANT = {}, UBI = '', PASO = 1, PASO_ANTES = 1, ENTREGA = 'DOMICILIO', HOY_ATIENDE = true, CAT = '', HOJA = '', ULT_TOT = null;
   // Forma de pago: EFECTIVO (exacto o con vuelto: paga_con), BILLETERA o TRANSFERENCIA (los datos vienen en M.pago).
-  const PAGO = { forma: '', vuelto: false, paga_con: '' };
+  const PAGO = { forma: '', vuelto: false, paga_con: '', mon: 'CS', mcs: '', musd: '' };   // mon: CS | USD | MIX (las dos: mcs córdobas + musd dólares)
+  let AVISO = '';
+  // Dólares: solo si el servidor lo avisa (acepta_dolares === true). El tipo de cambio viene de tipo_cambio.
+  function dolares() { return !!(M && M.acepta_dolares === true && Number(M.tipo_cambio) > 0); }
+  function tc() { return M && Number(M.tipo_cambio) > 0 ? Number(M.tipo_cambio) : 36; }
+  function usdModo() { return dolares() && PAGO.mon === 'USD' && ENTREGA !== 'RECOGE'; }
+  function mixModo() { return dolares() && PAGO.mon === 'MIX' && ENTREGA !== 'RECOGE'; }
+  function cs(n) { return 'C$' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
   const TINTES = [['#fde2df', '#C8372D'], ['#ffe9cf', '#b8560f'], ['#fdf0c4', '#8a6a00'], ['#e3efd2', '#4E7D1E'], ['#eadcca', '#5A3A24']];
   // El menú se guarda en el teléfono y se pinta de inmediato al abrir; por detrás se trae el actual (Apps Script tarda 1–3 s en frío).
   const MENU_K = 'lcdf_pedir_menu';
@@ -309,7 +320,51 @@
     const fila = function (k, v) { return v ? '<div><span>' + k + '</span><b>' + esc(v) + '</b></div>' : ''; };
     return '<div class="cuenta">' + (f === 'BILLETERA' ? fila('Billetera', b.nombre) + fila('Número', b.numero) : fila('Banco', b.banco) + fila('Cuenta', b.cuenta)) + fila('A nombre de', b.titular) + '</div>';
   }
-  function pintarPago() {
+  function pintarPago() { pintarPago_(); resPago(); }
+  // Equivalente en vivo cuando paga en dólares.
+  function vivo() {
+    const el = $('usdVivo'); if (!el) return;
+    if (mixModo()) {
+      const c = parseFloat(String(PAGO.mcs).replace(',', '.')) || 0, m = Number(PAGO.musd) || 0;
+      document.querySelectorAll('#opRap button').forEach(function (x) { x.classList.toggle('act', Number(x.dataset.r) === m); });
+      if (!(c > 0 && m > 0)) { el.textContent = 'Escriba cuánto en córdobas y cuánto en dólares: aquí ve la suma y su vuelto.'; return; }
+      const eq = m * tc(), s = c + eq, v = s - total();
+      el.innerHTML = cs(c) + ' + US$' + m + ' (' + cs(eq) + ') = ' + cs(s) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + ' (falta sumar el envío)' : '<span style="color:var(--rojo)">No alcanza para ' + cs(total()) + ': faltan ' + cs(-v) + '</span>');
+      return;
+    }
+    const u = Number(PAGO.paga_con) || 0;
+    document.querySelectorAll('#opRap button').forEach(function (x) { x.classList.toggle('act', Number(x.dataset.r) === u); });
+    if (!(u > 0)) { el.textContent = 'Escriba o toque cuántos dólares entrega: aquí ve el equivalente y su vuelto.'; return; }
+    const eq = u * tc(), v = eq - total();
+    el.innerHTML = 'US$' + u + ' = ' + cs(eq) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + ' (falta sumar el envío)' : '<span style="color:var(--rojo)">No alcanza para ' + cs(total()) + '</span>');
+  }
+  // Línea del resumen: cómo paga.
+  function resPago() {
+    const el = $('resPago'); if (!el) return;
+    const f = PAGO.forma, rec = ENTREGA === 'RECOGE', u = Number(PAGO.paga_con) || 0; let t = '';
+    if (f === 'EFECTIVO') t = rec ? 'Efectivo · paga al recoger' : mixModo() ? 'Efectivo · ' + (Number(PAGO.mcs) > 0 && Number(PAGO.musd) > 0 ? cs(parseFloat(PAGO.mcs)) + ' + US$' + Number(PAGO.musd) + ' (' + cs(Number(PAGO.musd) * tc()) + ')' : 'paga con córdobas y dólares') : usdModo() ? 'Efectivo · ' + (u > 0 ? 'paga con US$' + u + ' (' + cs(u * tc()) + ')' : 'paga en dólares') : PAGO.vuelto ? 'Efectivo · ' + (u > 0 ? 'paga con ' + cs(u) : 'con vuelto') : 'Efectivo · pago exacto';
+    else if (f === 'BILLETERA') t = 'Billetera';
+    else if (f === 'TRANSFERENCIA') t = 'Transferencia';
+    el.innerHTML = t ? 'Cómo paga: <b>' + esc(t) + '</b>' : '';
+  }
+  // ---- ventana de aviso al elegir la forma de pago ----
+  function avisoDe(f) {
+    const rec = ENTREGA === 'RECOGE', dl = dolares() ? ' Aceptamos córdobas y dólares (billetes de 1, 5, 10 y 20; no de 50 ni de 100) a C$' + tc() + ' por dólar. El vuelto se da en córdobas. Puede pagar con las dos a la vez.' : '';
+    if (f === 'EFECTIVO') return ['Pago en efectivo', rec ? 'Pague en efectivo cuando pase a recogerlo.' + dl : 'El total todavía no incluye el envío. Se lo confirmamos por WhatsApp según su zona. Díganos con cuánto paga para llevarle el vuelto.' + dl];
+    return [f === 'BILLETERA' ? 'Pago con billetera' : 'Pago por transferencia', rec ? 'No haga el pago todavía. Le confirmamos su pedido por WhatsApp y entonces sí lo hace.' : 'No haga el envío del dinero todavía. Falta sumar el envío, que depende de su zona. Le mandamos el total por WhatsApp y entonces sí lo envía.'];
+  }
+  function abrirAviso(f) {
+    AVISO = f; const x = avisoDe(f);
+    $('hojaP').innerHTML = '<div class="tirador"></div><div class="hh"><b id="pTit">' + esc(x[0]) + '</b><button class="cerrar tocable" id="pX" type="button" aria-label="Cerrar">✕</button></div><p class="aviso-p">' + esc(x[1]) + '</p><button class="boton tocable" id="pOk" type="button" style="width:100%">Entendido</button>';
+    $('veloP').classList.remove('oculto'); document.body.classList.add('bloq'); $('pOk').focus();
+  }
+  function cerrarAviso() {
+    if (!AVISO) return;
+    AVISO = ''; $('veloP').classList.add('oculto'); if (!HOJA) document.body.classList.remove('bloq');
+    const t = $('pagoDet').querySelector('input,button') || document.querySelector('#opPago button.act'); if (t) t.focus();
+  }
+  $('veloP').addEventListener('click', function (e) { if (e.target.id === 'pX' || e.target.id === 'pOk') cerrarAviso(); });
+  function pintarPago_() {
     const pg = (M && M.pago) || {}, rec = ENTREGA === 'RECOGE', d = $('pagoDet');
     document.querySelectorAll('#opPago button').forEach(function (b) {
       const ok = b.dataset.p === 'EFECTIVO' || (b.dataset.p === 'BILLETERA' ? !!pg.billetera : !!pg.transferencia);
@@ -321,15 +376,40 @@
     if (!PAGO.forma) return;
     if (PAGO.forma === 'EFECTIVO') {
       if (rec) { d.innerHTML = '<p class="pagoTxt" style="margin:0">💵 Paga en efectivo cuando pase a recogerlo.</p>'; return; }
-      d.innerHTML = '<div class="opciones" id="opVuelto" style="margin-bottom:8px"><button type="button" class="tocable' + (PAGO.vuelto ? '' : ' act') + '" data-v="0">Pago exacto, sin vuelto</button>' +
-        '<button type="button" class="tocable' + (PAGO.vuelto ? ' act' : '') + '" data-v="1">Necesito vuelto</button></div>' +
-        (PAGO.vuelto ? '<label>¿Con cuánto va a pagar? <small>Ej.: 500 o 1000</small><input class="ent" id="fPC" inputmode="numeric" maxlength="6" value="' + esc(PAGO.paga_con) + '"></label>' +
-          '<p class="pagoTxt">🛵 Le llevamos su vuelto. El total con el envío se lo confirmamos por WhatsApp.</p>'
-          : '<p class="pagoTxt">Por favor tenga el monto exacto al recibir. El total con el envío se lo confirmamos por WhatsApp.</p>');
+      const dol = dolares(), usd = usdModo(), mix = mixModo();
+      let h = dol ? '<div class="pagoTxt" id="monTit" style="margin:0 0 6px;font-weight:800">¿Paga en córdobas, en dólares o con las dos?</div><div class="opciones" id="opMon" role="group" aria-labelledby="monTit">' + [['CS', 'C$ Córdobas'], ['USD', 'US$ Dólares'], ['MIX', 'Las dos']].map(function (x) { return '<button type="button" class="tocable' + (x[0] === (usd ? 'USD' : mix ? 'MIX' : 'CS') ? ' act' : '') + '" data-mo="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' : '';
+      if (mix || usd) {
+        const rap = '<div class="opciones" id="opRap">' + [5, 10, 20].map(function (n) { return '<button type="button" class="tocable" data-r="' + n + '">US$' + n + '</button>'; }).join('') + '</div>',
+          bill = '<small>Billetes de 1, 5, 10 y 20. No aceptamos de 50 ni de 100.</small><input class="ent" inputmode="numeric" maxlength="3" id="';
+        h += (mix ? '<label>¿Cuánto en córdobas? <small>Ej.: 200 o 150.50</small><input class="ent" id="fMC" inputmode="decimal" maxlength="9" value="' + esc(PAGO.mcs) + '"></label><label>¿Cuánto en dólares? ' + bill + 'fMU" value="' + esc(PAGO.musd) + '"></label>' + rap
+          : rap + '<label>¿Con cuántos dólares va a pagar? ' + bill + 'fPC" value="' + esc(PAGO.paga_con) + '"></label>') +
+          '<p class="pagoTxt vivo" id="usdVivo" aria-live="polite"></p><p class="pagoTxt">🛵 Le llevamos su vuelto en córdobas. El total con el envío se lo confirmamos por WhatsApp.</p>';
+      } else {
+        h += '<div class="opciones" id="opVuelto" style="margin-bottom:8px"><button type="button" class="tocable' + (PAGO.vuelto ? '' : ' act') + '" data-v="0">Pago exacto, sin vuelto</button>' +
+          '<button type="button" class="tocable' + (PAGO.vuelto ? ' act' : '') + '" data-v="1">Necesito vuelto</button></div>' +
+          (PAGO.vuelto ? '<label>¿Con cuánto va a pagar? <small>Ej.: 500 o 1000</small><input class="ent" id="fPC" inputmode="numeric" maxlength="6" value="' + esc(PAGO.paga_con) + '"></label>' +
+            '<p class="pagoTxt">🛵 Le llevamos su vuelto. El total con el envío se lo confirmamos por WhatsApp.</p>'
+            : '<p class="pagoTxt">Por favor tenga el monto exacto al recibir. El total con el envío se lo confirmamos por WhatsApp.</p>');
+      }
+      d.innerHTML = h;
       d.querySelectorAll('#opVuelto button').forEach(function (b) {
         b.onclick = function () { PAGO.vuelto = b.dataset.v === '1'; pintarPago(); if (PAGO.vuelto) $('fPC').focus(); };
       });
-      if ($('fPC')) $('fPC').oninput = function () { PAGO.paga_con = $('fPC').value; };
+      d.querySelectorAll('#opMon button').forEach(function (b) {
+        b.onclick = function () { if (b.dataset.mo === PAGO.mon) return; PAGO.mon = b.dataset.mo; PAGO.paga_con = ''; PAGO.mcs = ''; PAGO.musd = ''; pintarPago(); const q = $('fMC') || $('fPC'); if (q) q.focus(); };
+      });
+      d.querySelectorAll('#opRap button').forEach(function (b) {
+        b.onclick = function () { if (mix) { PAGO.musd = b.dataset.r; $('fMU').value = PAGO.musd; } else { PAGO.paga_con = b.dataset.r; $('fPC').value = PAGO.paga_con; } vivo(); resPago(); };
+      });
+      if ($('fPC')) $('fPC').oninput = function () {
+        if (usd) { const v = $('fPC').value.replace(/\D/g, ''); if (v !== $('fPC').value) $('fPC').value = v; }
+        PAGO.paga_con = $('fPC').value; vivo(); resPago();
+      };
+      if ($('fMC')) {
+        $('fMC').oninput = function () { const v = $('fMC').value.replace(',', '.').replace(/[^\d.]/g, '').replace(/^(\d*\.?\d{0,2}).*$/, '$1'); if (v !== $('fMC').value) $('fMC').value = v; PAGO.mcs = v; vivo(); resPago(); };
+        $('fMU').oninput = function () { const v = $('fMU').value.replace(/\D/g, ''); if (v !== $('fMU').value) $('fMU').value = v; PAGO.musd = v; vivo(); resPago(); };
+      }
+      vivo();
       return;
     }
     const b = PAGO.forma === 'BILLETERA' ? pg.billetera : pg.transferencia;
@@ -342,7 +422,7 @@
       navigator.clipboard.writeText(v).then(function () { $('copiar').textContent = '✅ Copiado'; }).catch(function () { /* nada */ });
     };
   }
-  document.querySelectorAll('#opPago button').forEach(function (b) { b.onclick = function () { PAGO.forma = b.dataset.p; $('error').textContent = ''; pintarPago(); }; });
+  document.querySelectorAll('#opPago button').forEach(function (b) { b.onclick = function () { const cambia = PAGO.forma !== b.dataset.p; PAGO.forma = b.dataset.p; $('error').textContent = ''; pintarPago(); if (cambia) abrirAviso(PAGO.forma); }; });
   // Un solo oyente para el menú: categorías, − y ＋, y el botón que abre las presentaciones.
   document.addEventListener('click', function (e) {
     const b = e.target.closest && e.target.closest('[data-cat],[data-s],[data-m],[data-h],[data-hm],[data-hs],[data-ha]');
@@ -410,7 +490,14 @@
       '<button class="boton tocable" id="hojaOk" style="width:100%;margin-top:4px">Listo</button>';
   }
   $('velo').addEventListener('click', function (e) { if (e.target === $('velo') || e.target.id === 'hojaX' || e.target.id === 'hojaOk') cerrarHoja(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && HOJA) cerrarHoja(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && AVISO) { cerrarAviso(); return; }
+    if (e.key === 'Escape' && HOJA) cerrarHoja();
+    if (e.key === 'Tab' && AVISO) {   // el foco se queda dentro de la ventana
+      const f = $('hojaP').querySelectorAll('button'), p = f[0], u = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === p) { e.preventDefault(); u.focus(); } else if (!e.shiftKey && document.activeElement === u) { e.preventDefault(); p.focus(); }
+    }
+  });
 
   function total() { return Object.keys(CANT).reduce(function (s, k) { return s + CANT[k] * precioDe(k); }, 0); }
   function pintarPie() {
@@ -432,7 +519,7 @@
     if (n === 2) $('resumen').innerHTML = Object.keys(CANT).map(function (k) {
       return '<div><span>' + nombreLinea(k) + '</span><b>' + dinero(CANT[k] * precioDe(k)) + '</b></div>';
     }).join('') + (ENTREGA === 'RECOGE' ? '<div><span>Lo recoge</span><span>sin envío</span></div><div><b>Total</b><b>' + dinero(total()) + '</b></div>'
-      : '<div><span>Envío</span><span>se lo confirmamos</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div>');
+      : '<div><span>Envío</span><span>se lo confirmamos</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div><p class="pagoTxt" style="margin:8px 0 0">Total sin envío: <b>' + cs(total()) + '</b> · El envío se confirma por WhatsApp.</p>') + '<p class="pagoTxt" id="resPago" style="margin:4px 0 0"></p>';
     if (n === 2) pintarPago();
     if (PASO_ANTES !== n) window.scrollTo(0, 0);   // al cambiar entre domicilio y recoger no salta arriba
     PASO_ANTES = n;
@@ -458,10 +545,18 @@
     if (!rec && o.direccion.length < 6) return falta('Escriba su dirección.', 'fD');
     if (!rec && !o.en_zona) return falta('Marque la casilla si su dirección está en ' + (M.zona || 'la ciudad de León') + '. Fuera de ahí no hacemos entregas.', 'fZ');
     if (!PAGO.forma) return falta('Elija cómo va a pagar.', 'opPago');
-    const vuelto = !rec && PAGO.forma === 'EFECTIVO' && PAGO.vuelto, pc = Number(String(PAGO.paga_con).replace(/[^\d.]/g, ''));
-    if (vuelto && !(pc > 0)) return falta('Escriba con cuánto va a pagar, para llevarle el vuelto.', 'fPC');
-    if (vuelto && pc < total()) return falta('Con ' + dinero(pc) + ' no alcanza: su pedido es de ' + dinero(total()) + ' más el envío.', 'fPC');
-    o.pago = { forma: PAGO.forma, vuelto: vuelto, paga_con: vuelto ? pc : 0 };
+    const mix = !rec && PAGO.forma === 'EFECTIVO' && mixModo(), mc = Math.round((parseFloat(String(PAGO.mcs).replace(',', '.')) || 0) * 100) / 100, mu = parseInt(PAGO.musd, 10) || 0;
+    const usd = !rec && PAGO.forma === 'EFECTIVO' && usdModo(), vuelto = !rec && PAGO.forma === 'EFECTIVO' && (PAGO.vuelto || usd), pc = Number(String(PAGO.paga_con).replace(/[^\d.]/g, ''));
+    if (mix) {
+      if (!(mc > 0) && !(mu > 0)) return falta('Escriba cuánto paga en córdobas y cuánto en dólares.', 'fMC');
+      if (!(mc > 0) || !(mu > 0)) return falta('Si paga con una sola moneda, elija Córdobas o Dólares.', mc > 0 ? 'fMU' : 'fMC');
+      if (mc + mu * tc() + 1e-9 < total()) return falta('Con ' + cs(mc) + ' + US$' + mu + ' (' + cs(mu * tc()) + ') suman ' + cs(mc + mu * tc()) + ' y no alcanza: su pedido es de ' + cs(total()) + ' más el envío. Pague con más o cambie de opción.', 'fMU');
+    }
+    if (!mix && vuelto && !(pc > 0)) return falta(usd ? 'Escriba con cuántos dólares va a pagar, para llevarle el vuelto.' : 'Escriba con cuánto va a pagar, para llevarle el vuelto.', 'fPC');
+    if (!mix && usd && pc * tc() + 1e-9 < total()) return falta('Con US$' + pc + ' (' + cs(pc * tc()) + ') no alcanza: su pedido es de ' + cs(total()) + ' más el envío. Pague con más dólares o cambie a córdobas.', 'fPC');
+    if (!mix && !usd && vuelto && pc < total()) return falta('Con ' + dinero(pc) + ' no alcanza: su pedido es de ' + dinero(total()) + ' más el envío.', 'fPC');
+    o.pago = mix ? { forma: PAGO.forma, vuelto: true, paga_con: mc } : { forma: PAGO.forma, vuelto: vuelto, paga_con: vuelto ? pc : 0 };
+    if (typeof M.acepta_dolares === 'boolean') { o.pago.moneda_pago = mix ? 'MIXTO' : usd ? 'USD' : ''; o.moneda_pago = o.pago.moneda_pago; if (mix) { o.pago.paga_con_usd = mu; o.paga_con_usd = mu; } }   // solo si el servidor ya maneja dólares
     $('pieBtn').disabled = true; $('pieBtn').textContent = 'Enviando…';
     servidor('pedidoWeb', [o]).then(function (r) {
       guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); }
@@ -471,7 +566,7 @@
         : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.');
       $('lsWa').href = 'https://wa.me/' + (r.whatsapp.length === 8 ? '505' + r.whatsapp : r.whatsapp) + '?text=' + encodeURIComponent(r.texto);
       const f = o.pago.forma;
-      $('lsPago').innerHTML = f === 'EFECTIVO' ? (rec ? '💵 Paga en efectivo al recoger.' : o.pago.vuelto ? '💵 Paga en efectivo con <b>' + dinero(o.pago.paga_con) + '</b>: le llevamos su vuelto.' : '💵 Paga en efectivo al recibir. Tenga el monto exacto.')
+      $('lsPago').innerHTML = f === 'EFECTIVO' ? (rec ? '💵 Paga en efectivo al recoger.' : o.pago.vuelto ? (mix ? '💵 Paga en efectivo con <b>' + cs(mc) + ' + US$' + mu + ' (' + cs(mu * tc()) + ')</b>: le llevamos su vuelto en córdobas.' : usd ? '💵 Paga en efectivo con <b>US$' + o.pago.paga_con + ' (' + cs(o.pago.paga_con * tc()) + ')</b>: le llevamos su vuelto en córdobas.' : '💵 Paga en efectivo con <b>' + dinero(o.pago.paga_con) + '</b>: le llevamos su vuelto.') : '💵 Paga en efectivo al recibir. Tenga el monto exacto.')
         : cuentaHtml(f) + (rec ? 'Haga el pago de <b>' + dinero(r.total) + '</b>' : 'Cuando le confirmemos el total con el envío, haga el pago') + ' y <b>mande la foto del comprobante por WhatsApp</b> para confirmar su pedido.';
       $('lsPago').classList.remove('oculto');
       window.scrollTo(0, 0);
