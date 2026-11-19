@@ -124,6 +124,10 @@ h2{font-family:Rye,Georgia,serif;font-weight:400;font-size:19px;margin:18px 0 8p
 .cant output{min-width:48px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
 @media (min-width:640px){.lista{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:900px){.lista{grid-template-columns:repeat(3,minmax(0,1fr))}.prod{grid-template-columns:112px minmax(0,1fr) auto}.ft{width:112px;height:112px}}
+/* 2 o 3 columnas: la tarjeta es angosta; con − n ＋ visible, los botones bajan bajo el nombre (si no, tapan nombre y precio) */
+@media (min-width:640px){.prod:has(.ag.con){grid-template-columns:96px minmax(0,1fr);row-gap:6px}.prod:has(.ag.con) .ft{grid-row:1/3}
+.prod:has(.ag.con) .nm{align-self:end}.prod:has(.ag.con) .ag{grid-column:2;align-self:start;justify-content:flex-start}}
+@media (min-width:900px){.prod:has(.ag.con){grid-template-columns:112px minmax(0,1fr)}}
 /* ---- carga ---- */
 .fant{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;background:var(--papel);border:1px solid var(--borde);border-radius:var(--r);padding:8px;margin-bottom:8px;animation:parpa 1.2s ease-in-out infinite}
 .fant i{display:block;background:#f1e4c8;border-radius:6px;height:14px;margin:6px 0}
@@ -258,6 +262,13 @@ h2.nb::before{content:attr(data-n);flex:none;width:24px;height:24px;border-radiu
 #ubiTxt{font-size:13px;color:var(--gris);margin:6px 0 10px}
 #ubiTxt[data-e="ok"]{color:var(--verde)}#ubiTxt[data-e="no"]{color:var(--rojo)}
 .zonaC{background:var(--tinte);border:1px solid var(--borde);border-radius:12px;padding:10px 12px}
+/* v0.6 barrio: lista que aparece al escribir */
+.bL{background:#fff;border:1px solid var(--borde);border-radius:var(--r-ch);margin:-6px 0 10px;max-height:264px;overflow-y:auto;box-shadow:var(--s1)}
+.bL button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 12px;border:0;border-bottom:1px solid var(--borde);background:none;color:inherit;font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.bL button:last-child{border-bottom:0}.bL button:focus-visible{outline:none;background:var(--tinte)}
+.bL small{color:var(--gris);white-space:nowrap;font-variant-numeric:tabular-nums}
+.bTx{font-size:14px;margin:-4px 0 10px;color:var(--gris)}.bTx:empty{display:none}
+.bTx.ok{color:var(--verde);font-weight:800}.bTx.no{color:var(--rojo);font-weight:800;background:var(--papel);border-left:4px solid var(--rojo);border-radius:8px;padding:8px 10px;margin-top:0}
 /* campo señalado por un error (falta) */
 input.malo,textarea.malo,.zonaC.malo{border-color:var(--rojo)}
 input.ent.malo:focus,textarea.ent.malo:focus{border-color:var(--rojo);box-shadow:0 0 0 3px #c8372d55}
@@ -342,7 +353,9 @@ footer{text-align:center;color:var(--cafe2);font-size:12px;padding:16px}
       <label>Su WhatsApp <small>8 números; ahí le confirmamos</small><input class="ent" id="fT" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" enterkeyhint="next"></label>
       <label id="fHc" class="oculto">¿A qué hora pasa? <small>opcional</small><input class="ent" id="fH" maxlength="30" placeholder="Ej.: a las 5 de la tarde" autocomplete="off" enterkeyhint="next"></label>
       <div id="fDom">
-      <label>Dirección <small>barrio, de dónde, cuántas cuadras</small><input class="ent" id="fD" maxlength="160" autocomplete="street-address" enterkeyhint="next"></label>
+      <div id="fBc" class="oculto"><label>Su barrio o reparto <small>escriba el nombre y tóquelo en la lista</small><input class="ent" id="fB" maxlength="60" autocomplete="off" autocapitalize="words" enterkeyhint="next" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fBL" aria-describedby="fBTx"></label>
+      <div class="bL oculto" id="fBL" role="listbox" aria-label="Barrios"></div><p class="bTx" id="fBTx" aria-live="polite"></p></div>
+      <label>Dirección <small id="fDs">barrio, de dónde, cuántas cuadras</small><input class="ent" id="fD" maxlength="160" autocomplete="street-address" enterkeyhint="next"></label>
       <label>Señas <small>color de la casa, portón… (opcional)</small><input class="ent" id="fR" maxlength="120" autocomplete="off" enterkeyhint="next"></label>
       <button class="boton sec tocable ubiB" id="fUbi" type="button">📍 Mandar mi ubicación (opcional)</button>
       <div id="ubiTxt" aria-live="polite"></div>
@@ -426,6 +439,17 @@ function tc() { return M && Number(M.tipo_cambio) > 0 ? Number(M.tipo_cambio) : 
 function usdModo() { return dolares() && PAGO.mon === 'USD' && ENTREGA !== 'RECOGE'; }
 function mixModo() { return dolares() && PAGO.mon === 'MIX' && ENTREGA !== 'RECOGE'; }
 function cs(n) { return dinero(n).replace(' ', ''); }
+// ---- v0.6: barrio con su envío (M.barrios = [{b, e}]; si el servidor no lo manda, todo sigue como antes) ----
+let BARRIO = null;
+function conBarrios() { return !!(M && M.barrios && M.barrios.length); }
+function envio() { return ENTREGA === 'RECOGE' || !BARRIO ? 0 : BARRIO.e; }
+function aPagar() { return total() + envio(); }
+// Lo que falta decir del envío después de un monto: con barrio ya va sumado.
+function masEnv() { return ENTREGA === 'RECOGE' ? '' : BARRIO ? ' con el envío' : ' más el envío'; }
+function faltaEnv() { return ENTREGA === 'RECOGE' || BARRIO ? '' : conBarrios() ? ' (falta elegir su barrio)' : ' (falta sumar el envío)'; }
+function normB(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
+function barrioDe(t) { const k = normB(t); return k && conBarrios() ? M.barrios.filter(function (x) { return normB(x.b) === k; })[0] || null : null; }
+function rangoEnv() { const e = M.barrios.map(function (x) { return x.e; }); return cs(Math.min.apply(null, e)).replace('.00', '') + ' a ' + cs(Math.max.apply(null, e)).replace('.00', ''); }
 const TINTES = [['#fde2df', '#C8372D'], ['#ffe9cf', '#b8560f'], ['#fdf0c4', '#8a6a00'], ['#e3efd2', '#4E7D1E'], ['#eadcca', '#5A3A24']];
 // Ícono de la categoría según palabras de su nombre.
 const ICOS = [['chicharr', '🐷'], ['frit', '🍖'], ['tamal', '🌽'], ['carne|cerdo|chingaste|costill', '🥩'], ['acompa|tajada|yuca|ensalada|guarnic', '🥗'], ['tortilla|pan', '🍞'],
@@ -529,6 +553,12 @@ function pintarMenu(m) {
   m.productos.forEach(function (p) { refrescar(p.codigo); });
   filtrar();
   if (!$('fN').value) { $('fN').value = guardado('n'); $('fT').value = guardado('t'); $('fD').value = guardado('d'); $('fR').value = guardado('r'); }
+  // v0.6: con lista de barrios se elige el barrio (y se ve el total con envío); sin lista, la casilla de la zona de siempre.
+  const cb = conBarrios();
+  $('fBc').classList.toggle('oculto', !cb); $('fZ').closest('.zonaC').classList.toggle('oculto', cb);
+  $('fDs').textContent = cb ? 'de dónde, cuántas cuadras' : 'barrio, de dónde, cuántas cuadras';
+  if (cb && !$('fB').value) $('fB').value = guardado('b');
+  BARRIO = barrioDe($('fB').value); pintarBarrio();
   pintarVista();
   if (HOJA) pintarHoja();
   pintarPago();
@@ -549,15 +579,15 @@ function vivo() {
     const c = parseFloat(String(PAGO.mcs).replace(',', '.')) || 0, m = Number(PAGO.musd) || 0;
     document.querySelectorAll('#opRap button').forEach(function (x) { x.classList.toggle('act', Number(x.dataset.r) === m); });
     if (!(c > 0 && m > 0)) { el.textContent = 'Escriba cuánto en córdobas y cuánto en dólares: aquí ve la suma y su vuelto.'; return; }
-    const eq = m * tc(), s = c + eq, v = s - total();
-    el.innerHTML = cs(c) + ' + US$' + m + ' (' + cs(eq) + ') = ' + cs(s) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + ' (falta sumar el envío)' : '<span style="color:var(--rojo)">No alcanza para ' + cs(total()) + ': faltan ' + cs(-v) + '</span>');
+    const eq = m * tc(), s = c + eq, v = s - aPagar();
+    el.innerHTML = cs(c) + ' + US$' + m + ' (' + cs(eq) + ') = ' + cs(s) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + faltaEnv() : '<span style="color:var(--rojo)">No alcanza para ' + cs(aPagar()) + ': faltan ' + cs(-v) + '</span>');
     return;
   }
   const u = Number(PAGO.paga_con) || 0;
   document.querySelectorAll('#opRap button').forEach(function (x) { x.classList.toggle('act', Number(x.dataset.r) === u); });
   if (!(u > 0)) { el.textContent = 'Escriba o toque cuántos dólares entrega: aquí ve el equivalente y su vuelto.'; return; }
-  const eq = u * tc(), v = eq - total();
-  el.innerHTML = 'US$' + u + ' = ' + cs(eq) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + ' (falta sumar el envío)' : '<span style="color:var(--rojo)">No alcanza para ' + cs(total()) + '</span>');
+  const eq = u * tc(), v = eq - aPagar();
+  el.innerHTML = 'US$' + u + ' = ' + cs(eq) + ' · ' + (v >= -1e-9 ? 'Vuelto aprox. ' + cs(Math.max(0, v)) + faltaEnv() : '<span style="color:var(--rojo)">No alcanza para ' + cs(aPagar()) + '</span>');
 }
 // Línea del resumen: cómo paga.
 function resPago() {
@@ -571,8 +601,8 @@ function resPago() {
 // ---- ventana de aviso al elegir la forma de pago ----
 function avisoDe(f) {
   const rec = ENTREGA === 'RECOGE', dl = dolares() ? ' Aceptamos córdobas y dólares (billetes de 1, 5, 10 y 20; no de 50 ni de 100) a C$' + tc() + ' por dólar. El vuelto se da en córdobas. Puede pagar con las dos a la vez.' : '';
-  if (f === 'EFECTIVO') return ['Pago en efectivo', rec ? 'Pague en efectivo cuando pase a recogerlo.' + dl : 'El total todavía no incluye el envío. Se lo confirmamos por WhatsApp según su zona. Díganos con cuánto paga para llevarle el vuelto.' + dl];
-  return [f === 'BILLETERA' ? 'Pago con billetera' : 'Pago por transferencia', rec ? 'No haga el pago todavía. Le confirmamos su pedido por WhatsApp y entonces sí lo hace.' : 'No haga el envío del dinero todavía. Falta sumar el envío, que depende de su zona. Le mandamos el total por WhatsApp y entonces sí lo envía.'];
+  if (f === 'EFECTIVO') return ['Pago en efectivo', rec ? 'Pague en efectivo cuando pase a recogerlo.' + dl : conBarrios() ? 'El envío depende de su barrio y se suma solo al total. Díganos con cuánto paga para llevarle el vuelto.' + dl : 'El total todavía no incluye el envío. Se lo confirmamos por WhatsApp según su zona. Díganos con cuánto paga para llevarle el vuelto.' + dl];
+  return [f === 'BILLETERA' ? 'Pago con billetera' : 'Pago por transferencia', rec || conBarrios() ? 'No haga el pago todavía. Le confirmamos su pedido por WhatsApp y entonces sí lo hace.' : 'No haga el envío del dinero todavía. Falta sumar el envío, que depende de su zona. Le mandamos el total por WhatsApp y entonces sí lo envía.'];
 }
 // #hojaP: aviso de pago (AVISO = forma) o información (AVISO = 'INFO').
 let VOLVER = null;
@@ -590,7 +620,7 @@ function abrirVaciar(b) {
 function abrirInfo(b) {
   AVISO = 'INFO'; VOLVER = b;
   const ren = function (ic, t, v) { return v ? '<div class="ren"><span aria-hidden="true">' + ic + '</span><div><b>' + t + '</b>' + esc(v) + '</div></div>' : ''; };
-  abrirP('Horario, dirección y envío', ren('🕒', 'Horario', M.horario) + ren('📍', 'Dirección', M.direccion || M.ciudad) + ren('🛵', 'Envío', M.envio) +
+  abrirP('Horario, dirección y envío', ren('🕒', 'Horario', M.horario) + ren('📍', 'Dirección', M.direccion || M.ciudad) + ren('🛵', 'Envío', conBarrios() ? 'Según su barrio, de ' + rangoEnv() + '. Si su barrio no aparece en la lista, no llegamos ahí.' : M.envio) +
     '<p class="aviso' + (HOY_ATIENDE ? '' : ' cerrado') + '" style="margin:12px 0"><b>Solo aceptamos pedidos en ' + esc(M.zona || 'la ciudad de León') + ', ' + esc(M.dias_texto || 'sábados y domingos') + '.</b> Si está en otro municipio o departamento no podemos atender su pedido.</p>');
 }
 function cerrarAviso(atras) {
@@ -626,13 +656,13 @@ function pintarPago_() {
         bill = '<small>Billetes de 1, 5, 10 y 20. No aceptamos de 50 ni de 100.</small><input class="ent" inputmode="numeric" maxlength="3" id="';
       h += (mix ? '<label>¿Cuánto en córdobas? <small>Ej.: 200 o 150.50</small><input class="ent" id="fMC" inputmode="decimal" maxlength="9" value="' + esc(PAGO.mcs) + '"></label><label>¿Cuánto en dólares? ' + bill + 'fMU" value="' + esc(PAGO.musd) + '"></label>' + rap
         : rap + '<label>¿Con cuántos dólares va a pagar? ' + bill + 'fPC" value="' + esc(PAGO.paga_con) + '"></label>') +
-        '<p class="pagoTxt vivo" id="usdVivo" aria-live="polite"></p><p class="pagoTxt">🛵 Le llevamos su vuelto en córdobas. El total con el envío se lo confirmamos por WhatsApp.</p>';
+        '<p class="pagoTxt vivo" id="usdVivo" aria-live="polite"></p><p class="pagoTxt">🛵 Le llevamos su vuelto en córdobas. ' + (conBarrios() ? 'El total con el envío lo ve en «Su pedido».' : 'El total con el envío se lo confirmamos por WhatsApp.') + '</p>';
     } else {
       h += '<div class="opciones" id="opVuelto" style="margin-bottom:8px"><button type="button" class="tocable' + (PAGO.vuelto ? '' : ' act') + '" data-v="0">Pago exacto, sin vuelto</button>' +
         '<button type="button" class="tocable' + (PAGO.vuelto ? ' act' : '') + '" data-v="1">Necesito vuelto</button></div>' +
         (PAGO.vuelto ? '<label>¿Con cuánto va a pagar? <small>Ej.: 500 o 1000</small><input class="ent" id="fPC" inputmode="numeric" maxlength="6" value="' + esc(PAGO.paga_con) + '"></label>' +
-          '<p class="pagoTxt">🛵 Le llevamos su vuelto. El total con el envío se lo confirmamos por WhatsApp.</p>'
-          : '<p class="pagoTxt">Por favor tenga el monto exacto al recibir. El total con el envío se lo confirmamos por WhatsApp.</p>');
+          '<p class="pagoTxt">🛵 Le llevamos su vuelto. ' + (conBarrios() ? 'El total con el envío lo ve en «Su pedido».' : 'El total con el envío se lo confirmamos por WhatsApp.') + '</p>'
+          : '<p class="pagoTxt">Por favor tenga el monto exacto al recibir. ' + (conBarrios() ? 'El total con el envío lo ve en «Su pedido».' : 'El total con el envío se lo confirmamos por WhatsApp.') + '</p>');
     }
     d.innerHTML = h;
     d.querySelectorAll('#opVuelto button').forEach(function (b) {
@@ -657,7 +687,7 @@ function pintarPago_() {
   }
   const b = PAGO.forma === 'BILLETERA' ? pg.billetera : pg.transferencia;
   d.innerHTML = cuentaHtml(PAGO.forma) + '<button type="button" class="boton sec tocable" id="copiar" style="width:100%;font-size:15px;min-height:44px">📋 Copiar el ' + (PAGO.forma === 'BILLETERA' ? 'número' : 'número de cuenta') + '</button>' +
-    '<p class="pagoTxt">' + (rec ? 'Total: <b>' + dinero(total()) + '</b>. Haga el pago' : 'Espere que le confirmemos por WhatsApp el total con el envío; entonces haga el pago') +
+    '<p class="pagoTxt">' + (rec ? 'Total: <b>' + dinero(total()) + '</b>. Haga el pago' : conBarrios() ? 'Espere que le confirmemos el pedido por WhatsApp; entonces haga el pago del total con envío' : 'Espere que le confirmemos por WhatsApp el total con el envío; entonces haga el pago') +
     ' y <b>mande la foto del comprobante por el chat de WhatsApp</b> para confirmar su pedido.</p>';
   $('copiar').onclick = function () {
     const v = PAGO.forma === 'BILLETERA' ? b.numero : b.cuenta;
@@ -720,8 +750,47 @@ function ponerEntrega() {
   const rec = ENTREGA === 'RECOGE';
   $('fDom').classList.toggle('oculto', rec); $('fHc').classList.toggle('oculto', !rec);
   $('tit2').textContent = rec ? 'Sus datos' : '¿A dónde se lo llevamos?';
+  alCambiarEnvio();
 }
 if (ENTREGA === 'RECOGE') ponerEntrega();   // carrito recuperado «para recoger»
+// ---- v0.6: barrio: al escribir sale la lista; al tocar uno queda elegido y el total ya trae su envío ----
+function listaB(v) {
+  const pal = normB(v).split(' ').filter(Boolean);
+  if (!pal.length || !conBarrios()) return [];
+  return M.barrios.filter(function (x) { const n = ' ' + normB(x.b); return pal.every(function (w) { return n.indexOf(' ' + w) !== -1; }); });
+}
+function pintarListaB() {
+  const el = $('fBL'), v = $('fB').value, r = BARRIO && normB(BARRIO.b) === normB(v) ? [] : listaB(v).slice(0, 8);
+  el.innerHTML = r.map(function (x) { return '<button type="button" role="option" class="tocable" data-b="' + esc(x.b) + '"><span>' + esc(x.b) + '</span><small>envío ' + cs(x.e) + '</small></button>'; }).join('');
+  el.classList.toggle('oculto', !r.length); $('fB').setAttribute('aria-expanded', String(!!r.length));
+}
+function cerrarListaB() { $('fBL').classList.add('oculto'); $('fB').setAttribute('aria-expanded', 'false'); }
+function pintarBarrio() {
+  const t = $('fBTx'), v = $('fB').value.trim();
+  t.className = 'bTx';
+  if (!conBarrios()) t.textContent = '';
+  else if (BARRIO) { t.className = 'bTx ok'; t.textContent = '🛵 Envío a ' + BARRIO.b + ': ' + cs(BARRIO.e); }
+  else if (v && !listaB(v).length) { t.className = 'bTx no'; t.textContent = 'No encontramos «' + v + '». Solo entregamos en los barrios de la lista: si el suyo no aparece, no llegamos ahí. Puede elegir «Paso a recogerlo».'; }
+  else t.textContent = v ? 'Toque su barrio en la lista.' : 'El envío va de ' + rangoEnv() + ', según el barrio.';
+}
+// Lo que muestra montos repinta al cambiar el barrio o la forma de entrega.
+function alCambiarEnvio() { if (!M) return; pintarPie(); if (VISTA === 'datos') pintarResumen(); resPago(); vivo(); }
+function elegirBarrio(n) { $('fB').value = n; BARRIO = barrioDe(n); sano($('fB')); pintarListaB(); pintarBarrio(); alCambiarEnvio(); }
+$('fB').addEventListener('input', function () { BARRIO = barrioDe($('fB').value); pintarListaB(); pintarBarrio(); alCambiarEnvio(); });
+$('fB').addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowDown' && !$('fBL').classList.contains('oculto')) { e.preventDefault(); $('fBL').querySelector('button').focus(); }
+  else if (e.key === 'Escape') cerrarListaB();
+  else if (e.key === 'Enter' && !BARRIO && !$('fBL').classList.contains('oculto')) elegirBarrio($('fBL').querySelector('button').dataset.b);   // «Siguiente» elige el primero
+});
+$('fBL').addEventListener('click', function (e) { const b = e.target.closest('[data-b]'); if (b) { elegirBarrio(b.dataset.b); $('fD').focus(); } });
+$('fBL').addEventListener('keydown', function (e) {
+  const bs = Array.prototype.slice.call($('fBL').querySelectorAll('button')), i = bs.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' && bs[i + 1]) { e.preventDefault(); bs[i + 1].focus(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); (bs[i - 1] || $('fB')).focus(); }
+  else if (e.key === 'Escape') { cerrarListaB(); $('fB').focus(); }
+});
+// Al salir del campo y de la lista, la lista se cierra.
+document.addEventListener('focusin', function (e) { if (e.target !== $('fB') && !$('fBL').contains(e.target)) cerrarListaB(); });
 
 function prod(c) { return M.productos.filter(function (p) { return p.codigo === c; })[0]; }
 // Por libra, de media en media; lo demás y las presentaciones, de uno en uno.
@@ -882,7 +951,7 @@ document.addEventListener('keydown', function (e) {
 
 function total() { return Object.keys(CANT).reduce(function (s, k) { return s + CANT[k] * precioDe(k); }, 0); }
 function pintarPie() {
-  const n = Object.keys(CANT).length, t = dinero(total());
+  const n = Object.keys(CANT).length, t = dinero(VISTA === 'datos' ? aPagar() : total());
   $('pieTot').textContent = t;
   if (ULT_TOT !== null && ULT_TOT !== t) pulsar($('pieTot'));
   ULT_TOT = t;
@@ -892,7 +961,7 @@ function pintarPie() {
   $('navN').textContent = n; $('navN').classList.toggle('oculto', !n);
   const np = n + ' producto' + (n === 1 ? '' : 's'), v = VISTA, der = v === 'datos' && ANCHO.matches, ver = !der && (v === 'datos' || (!!n && (v === 'menu' || v === 'carro'))), nav = v !== 'datos', av = (ver || der) && v !== 'menu' && motivo();
   $('cabCarro').setAttribute('aria-label', 'Ver carrito' + (n ? ': ' + np : ', vacío'));
-  $('pieN').textContent = np + (v === 'menu' ? '' : ENTREGA === 'RECOGE' ? ' · para recoger' : ' · más envío');
+  $('pieN').textContent = np + (v === 'menu' ? '' : ENTREGA === 'RECOGE' ? ' · para recoger' : v === 'datos' && BARRIO ? ' · con envío' : ' · más envío');
   const pb = $('pieBtn');
   pb.textContent = ENV ? 'Enviando…' : v === 'menu' ? 'Ver carrito' : v === 'carro' ? 'Continuar con mi pedido' : '✅ Enviar pedido';
   pb.disabled = ENV || (v !== 'menu' && (!n || !M.abierto || !HOY_ATIENDE));   // «Ver carrito» siempre se puede
@@ -923,8 +992,8 @@ function pintarCarro() {
       '<button type="button" class="crT tocable" data-ver="' + c + '"><b>' + esc(p.nombre) + '</b><small>' + (q.pn ? esc(q.pn) + ' · ' + pr + ' c/u' : pr + (lb ? ' /lb' : ' c/u')) + '</small></button>' +
       '<div class="cant crC"><button type="button" class="tocable" data-m="' + e + '" aria-label="Menos">−</button><output>' + CANT[k] + (lb ? ' lb' : '') + '</output><button type="button" class="tocable" data-s="' + e + '" aria-label="Más">＋</button></div>' +
       '<b class="crI din">' + dinero(CANT[k] * precioDe(k)) + '</b><button type="button" class="crQ tocable" data-q="' + e + '">' + SVG_QUITA + 'Quitar</button></div>';
-  }).join('') + '</div><div class="tarjeta resumen"><div><span>Subtotal</span><b>' + dinero(total()) + '</b></div><div><span>Envío</span><span>' + (rec ? 'sin envío, pasa a recogerlo' : 'se lo confirmamos por WhatsApp') + '</span></div>' +
-    '<div class="crTot"><b>' + (rec ? 'Total' : 'Total sin envío') + '</b><b class="din">' + dinero(total()) + '</b></div>' + (M.envio ? '<p class="crE">' + esc(M.envio) + '</p>' : '') + '</div>' +
+  }).join('') + '</div><div class="tarjeta resumen"><div><span>Subtotal</span><b>' + dinero(total()) + '</b></div><div><span>Envío' + (!rec && BARRIO ? ' a ' + esc(BARRIO.b) : '') + '</span>' + (rec ? '<span>sin envío, pasa a recogerlo</span>' : BARRIO ? '<b>' + dinero(BARRIO.e) + '</b>' : '<span>' + (conBarrios() ? 'según su barrio (' + rangoEnv() + ')' : 'se lo confirmamos por WhatsApp') + '</span>') + '</div>' +
+    '<div class="crTot"><b>' + (rec ? 'Total' : BARRIO ? 'Total con envío' : 'Total sin envío') + '</b><b class="din">' + dinero(aPagar()) + '</b></div>' + (conBarrios() && !rec ? (BARRIO ? '' : '<p class="crE">Su barrio lo elige en el siguiente paso y ahí ve el total con envío.</p>') : M.envio ? '<p class="crE">' + esc(M.envio) + '</p>' : '') + '</div>' +
     '<div class="crA"><button type="button" class="lnk tocable" data-ir="menu">＋ Agregar más productos</button><button type="button" class="lnk no tocable" data-vac>Vaciar carrito</button></div>';
   el.innerHTML = h;
   if (at) { const f = el.querySelector('[data-' + at + '="' + CSS.escape(av) + '"]'); (f || $('crTit')).focus(); }
@@ -936,10 +1005,12 @@ function nombreLinea(k) {
 // Resumen de solo lectura de la vista de datos (plegado).
 function pintarResumen() {
   const n = Object.keys(CANT).length;
-  $('resS').innerHTML = 'Su pedido · ' + n + ' producto' + (n === 1 ? '' : 's') + ' · <span class="din">' + dinero(total()) + '</span>';
+  $('resS').innerHTML = 'Su pedido · ' + n + ' producto' + (n === 1 ? '' : 's') + ' · <span class="din">' + dinero(aPagar()) + '</span>';
   $('resumen').innerHTML = Object.keys(CANT).map(function (k) {
     return '<div><span>' + nombreLinea(k) + '</span><b>' + dinero(CANT[k] * precioDe(k)) + '</b></div>';
   }).join('') + (ENTREGA === 'RECOGE' ? '<div><span>Lo recoge</span><span>sin envío</span></div><div><b>Total</b><b>' + dinero(total()) + '</b></div>'
+    : BARRIO ? '<div><span>Subtotal</span><b>' + dinero(total()) + '</b></div><div><span>Envío a ' + esc(BARRIO.b) + '</span><b>' + dinero(BARRIO.e) + '</b></div><div><b>Total con envío</b><b>' + dinero(aPagar()) + '</b></div>'
+    : conBarrios() ? '<div><span>Envío</span><span>elija su barrio</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div><p class="pagoTxt" style="margin:8px 0 0">Al elegir su barrio verá el total con envío.</p>'
     : '<div><span>Envío</span><span>se lo confirmamos</span></div><div><b>Subtotal</b><b>' + dinero(total()) + '</b></div><p class="pagoTxt" style="margin:8px 0 0">Total sin envío: <b>' + cs(total()) + '</b> · El envío se confirma por WhatsApp.</p>') + '<p class="pagoTxt" id="resPago" style="margin:4px 0 0"></p>';
 }
 $('pieBtn').onclick = function () { if (VISTA === 'menu') ir('carro'); else if (VISTA === 'carro') ir('datos'); else enviar(); };
@@ -965,27 +1036,31 @@ function enviar() {
   if (o.nombre.length < 2) return falta('Escriba su nombre.', 'fN');
   if (o.telefono.replace(/\D/g, '').length < 8) return falta('Escriba su WhatsApp (8 números).', 'fT');
   if (!rec && o.direccion.length < 6) return falta('Escriba su dirección.', 'fD');
-  if (!rec && !o.en_zona) return falta('Marque la casilla si su dirección está en ' + (M.zona || 'la ciudad de León') + '. Fuera de ahí no hacemos entregas.', 'fZ');
+  if (!rec && conBarrios()) {
+    if (!BARRIO) return falta($('fB').value.trim() ? 'No entregamos en «' + $('fB').value.trim() + '». Elija su barrio de la lista; si no aparece, no llegamos ahí (puede elegir «Paso a recogerlo»).' : 'Escriba su barrio o reparto y elíjalo de la lista.', 'fB');
+    o.barrio = BARRIO.b; o.en_zona = true;
+  }
+  if (!rec && !conBarrios() && !o.en_zona) return falta('Marque la casilla si su dirección está en ' + (M.zona || 'la ciudad de León') + '. Fuera de ahí no hacemos entregas.', 'fZ');
   if (!PAGO.forma) return falta('Elija cómo va a pagar.', 'opPago');
   const mix = !rec && PAGO.forma === 'EFECTIVO' && mixModo(), mc = Math.round((parseFloat(String(PAGO.mcs).replace(',', '.')) || 0) * 100) / 100, mu = parseInt(PAGO.musd, 10) || 0;
   const usd = !rec && PAGO.forma === 'EFECTIVO' && usdModo(), vuelto = !rec && PAGO.forma === 'EFECTIVO' && (PAGO.vuelto || usd), pc = Number(String(PAGO.paga_con).replace(/[^\d.]/g, ''));
   if (mix) {
     if (!(mc > 0) && !(mu > 0)) return falta('Escriba cuánto paga en córdobas y cuánto en dólares.', 'fMC');
     if (!(mc > 0) || !(mu > 0)) return falta('Si paga con una sola moneda, elija Córdobas o Dólares.', mc > 0 ? 'fMU' : 'fMC');
-    if (mc + mu * tc() + 1e-9 < total()) return falta('Con ' + cs(mc) + ' + US$' + mu + ' (' + cs(mu * tc()) + ') suman ' + cs(mc + mu * tc()) + ' y no alcanza: su pedido es de ' + cs(total()) + ' más el envío. Pague con más o cambie de opción.', 'fMU');
+    if (mc + mu * tc() + 1e-9 < aPagar()) return falta('Con ' + cs(mc) + ' + US$' + mu + ' (' + cs(mu * tc()) + ') suman ' + cs(mc + mu * tc()) + ' y no alcanza: su pedido es de ' + cs(aPagar()) + masEnv() + '. Pague con más o cambie de opción.', 'fMU');
   }
   if (!mix && vuelto && !(pc > 0)) return falta(usd ? 'Escriba con cuántos dólares va a pagar, para llevarle el vuelto.' : 'Escriba con cuánto va a pagar, para llevarle el vuelto.', 'fPC');
-  if (!mix && usd && pc * tc() + 1e-9 < total()) return falta('Con US$' + pc + ' (' + cs(pc * tc()) + ') no alcanza: su pedido es de ' + cs(total()) + ' más el envío. Pague con más dólares o cambie a córdobas.', 'fPC');
-  if (!mix && !usd && vuelto && pc < total()) return falta('Con ' + dinero(pc) + ' no alcanza: su pedido es de ' + dinero(total()) + ' más el envío.', 'fPC');
+  if (!mix && usd && pc * tc() + 1e-9 < aPagar()) return falta('Con US$' + pc + ' (' + cs(pc * tc()) + ') no alcanza: su pedido es de ' + cs(aPagar()) + masEnv() + '. Pague con más dólares o cambie a córdobas.', 'fPC');
+  if (!mix && !usd && vuelto && pc < aPagar()) return falta('Con ' + dinero(pc) + ' no alcanza: su pedido es de ' + dinero(aPagar()) + masEnv() + '.', 'fPC');
   o.pago = mix ? { forma: PAGO.forma, vuelto: true, paga_con: mc } : { forma: PAGO.forma, vuelto: vuelto, paga_con: vuelto ? pc : 0 };
   if (typeof M.acepta_dolares === 'boolean') { o.pago.moneda_pago = mix ? 'MIXTO' : usd ? 'USD' : ''; o.moneda_pago = o.pago.moneda_pago; if (mix) { o.pago.paga_con_usd = mu; o.paga_con_usd = mu; } }   // solo si el servidor ya maneja dólares
   ENV = true; pintarPie();   // «Enviando…» con punto giratorio; los campos no se bloquean
   servidor('pedidoWeb', [o]).then(function (r) {
     ENV = false;
-    guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); }
+    guardar('n', o.nombre); guardar('t', o.telefono); if (!rec) { guardar('d', o.direccion); guardar('r', o.referencia); if (o.barrio) guardar('b', o.barrio); }
     const wa = 'https://wa.me/' + (r.whatsapp.length === 8 ? '505' + r.whatsapp : r.whatsapp) + '?text=' + encodeURIComponent(r.texto);
     // «Mi pedido»: solo lo pedido (sin nombre, teléfono, dirección, señas, ubicación ni nota).
-    guardar('ultimo', JSON.stringify({ id: r.id, t: Date.now(), entrega: ENTREGA, hora: o.hora_recoge, total: r.total,
+    guardar('ultimo', JSON.stringify({ id: r.id, t: Date.now(), entrega: ENTREGA, hora: o.hora_recoge, total: r.total, envio: Number(r.envio) || 0, barrio: r.barrio || '',
       lineas: Object.keys(CANT).map(function (k) { return { k: k, n: CANT[k], txt: texto(nombreLinea(k)), imp: CANT[k] * precioDe(k) }; }),
       pago: ($('resPago') ? $('resPago').textContent : '').replace(/^Cómo paga: /, ''), wa: wa }));
     // Carrito vacío y guardado borrado; la entrada «datos» sale del historial (ver tabla de «atrás»).
@@ -996,13 +1071,14 @@ function enviar() {
     $('lsTit').textContent = 'Pedido D' + r.id + ' enviado';
     // La frase «Todavía no está confirmado…» va aparte, arriba, en la caja amarilla.
     $('lsTxt').innerHTML = rec ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b>, para recoger' + (o.hora_recoge ? ' (' + esc(o.hora_recoge) + ')' : '') + '.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
+      : r.envio ? 'Ya nos llegó. Total <b>' + dinero(r.total) + '</b> con el envío a ' + esc(r.barrio) + ' (' + dinero(r.envio) + ').<br>Toque el botón verde para mandarnos el resumen por WhatsApp.'
       : 'Ya nos llegó. Subtotal <b>' + dinero(r.total) + '</b> más el envío.<br>Toque el botón verde para mandarnos el resumen por WhatsApp.';
     $('lsWa').href = wa;
     $('lsVer').open = false; $('lsRen').innerHTML = renUlt(ultimo());
     $('lsTit').focus();
     const f = o.pago.forma;
     $('lsPago').innerHTML = f === 'EFECTIVO' ? (rec ? '💵 Paga en efectivo al recoger.' : o.pago.vuelto ? (mix ? '💵 Paga en efectivo con <b>' + cs(mc) + ' + US$' + mu + ' (' + cs(mu * tc()) + ')</b>: le llevamos su vuelto en córdobas.' : usd ? '💵 Paga en efectivo con <b>US$' + o.pago.paga_con + ' (' + cs(o.pago.paga_con * tc()) + ')</b>: le llevamos su vuelto en córdobas.' : '💵 Paga en efectivo con <b>' + dinero(o.pago.paga_con) + '</b>: le llevamos su vuelto.') : '💵 Paga en efectivo al recibir. Tenga el monto exacto.')
-      : cuentaHtml(f) + (rec ? 'Haga el pago de <b>' + dinero(r.total) + '</b>' : 'Cuando le confirmemos el total con el envío, haga el pago') + ' y <b>mande la foto del comprobante por WhatsApp</b> para confirmar su pedido.';
+      : cuentaHtml(f) + (rec ? 'Haga el pago de <b>' + dinero(r.total) + '</b>' : r.envio ? 'Cuando le confirmemos el pedido, haga el pago de <b>' + dinero(r.total) + '</b>' : 'Cuando le confirmemos el total con el envío, haga el pago') + ' y <b>mande la foto del comprobante por WhatsApp</b> para confirmar su pedido.';
     $('lsPago').classList.remove('oculto');
   }).catch(function (e) { ENV = false; $('error').textContent = e.message; pintarPie(); });
 }
@@ -1056,7 +1132,8 @@ function fechaTxt(t) {
 function renUlt(u) {
   if (!u) return '';
   return u.lineas.map(function (l) { return '<div><span>' + esc(l.txt) + '</span><b>' + dinero(l.imp) + '</b></div>'; }).join('') +
-    '<div class="crTot"><b>' + (u.entrega === 'RECOGE' ? 'Total' : 'Subtotal (más envío)') + '</b><b class="din">' + dinero(u.total) + '</b></div>';
+    (u.envio ? '<div><span>Envío' + (u.barrio ? ' a ' + esc(u.barrio) : '') + '</span><b>' + dinero(u.envio) + '</b></div>' : '') +
+    '<div class="crTot"><b>' + (u.entrega === 'RECOGE' ? 'Total' : u.envio ? 'Total con envío' : 'Subtotal (más envío)') + '</b><b class="din">' + dinero(u.total) + '</b></div>';
 }
 function pintarMio() {
   const u = ultimo(), el = $('vMio');

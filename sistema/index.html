@@ -4882,7 +4882,12 @@
   // ----- Delivery -----
   let DV = null, DV_PEST = 'tablero', DV_VERSION = '', DV_RELOJ = null, DV_VISTOS = null, DV_FORM = null, DV_AVISO = '';
   document.querySelectorAll('#pestDel button').forEach(function (b) { b.onclick = function () { pestanaDel(b.dataset.p); }; });
-  function formDelVacio() { return { id: '', cliente: { nombre: '', telefono: '', direccion: '', referencia: '', ubicacion: '' }, envio: '', nota: '', carro: [], origen: 'SISTEMA', entrega: 'DOMICILIO', hora_recoge: '', forma_pago: '', paga_con: '', moneda_pago: '', paga_con_usd: '' }; }
+  // v0.6: barrio de la lista Repartos por su nombre (sin tildes, mayúsculas ni signos), o null.
+  function barrioDe(n) {
+    const k = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }, b = k(n);
+    return b ? (DV.barrios || []).filter(function (x) { return k(x.b) === b; })[0] || null : null;
+  }
+  function formDelVacio() { return { id: '', barrio: '', cliente: { nombre: '', telefono: '', direccion: '', referencia: '', ubicacion: '' }, envio: '', nota: '', carro: [], origen: 'SISTEMA', entrega: 'DOMICILIO', hora_recoge: '', forma_pago: '', paga_con: '', moneda_pago: '', paga_con_usd: '' }; }
   // Solo enlaces http(s) se dibujan como enlace (un "javascript:…" pegado del chat se ejecutaría al tocarlo).
   function enlaceMapa(u) { return /^https?:\/\//i.test(String(u || '')) ? ' · <a href="' + esc(u) + '" target="_blank" rel="noopener">mapa</a>' : ''; }
   function abrirDelivery(p) {
@@ -4978,7 +4983,7 @@
       '<ul>' + p.lineas.map(function (l) { return '<li>' + esc(cantLinea(l)) + ' ' + esc(l.producto) + '</li>'; }).join('') +
       (p.recoge ? '' : p.envio ? '<li style="font-weight:400">Envío ' + dinero(p.envio) + '</li>' : '<li style="font-weight:400;color:#C8372D">Falta poner el envío</li>') + '</ul>' +
       (p.recoge ? '<div>🏠 <b>Lo recoge</b>' + (p.hora_recoge ? ' · pasa ' + esc(p.hora_recoge) : '') + '</div>'
-        : '<div>📍 ' + esc(p.direccion) + (p.referencia ? ' <small>(' + esc(p.referencia) + ')</small>' : '') + enlaceMapa(p.ubicacion) + '</div>') +
+        : '<div>📍 ' + (p.barrio ? '<b>' + esc(p.barrio) + '</b> · ' : '') + esc(p.direccion) + (p.referencia ? ' <small>(' + esc(p.referencia) + ')</small>' : '') + enlaceMapa(p.ubicacion) + '</div>' + ubiTxt(p)) +
       '<div>📞 <a href="https://wa.me/' + telWhatsApp(p.telefono) + '" target="_blank" rel="noopener">' + esc(p.telefono) + '</a>' + (p.nota ? ' · 📝 ' + esc(p.nota) : '') + '</div>' +
       (p.forma_pago ? '<div>' + pagoCorto(p) + '</div>' : '') +
       '<div style="margin-top:4px"><b>' + pie + '</b></div>' +
@@ -5081,7 +5086,7 @@
     }
     if (acc === 'EDITAR') {
       DV_FORM = { id: p.id, cliente: { nombre: p.cliente_nombre, telefono: p.telefono, direccion: p.direccion, referencia: p.referencia, ubicacion: p.ubicacion },
-        envio: p.envio, nota: p.nota, carro: carroDesde(p.lineas, DV.menu), origen: p.origen, entrega: p.recoge ? 'RECOGE' : 'DOMICILIO', hora_recoge: p.hora_recoge || '',
+        envio: p.envio, barrio: p.barrio || '', nota: p.nota, carro: carroDesde(p.lineas, DV.menu), origen: p.origen, entrega: p.recoge ? 'RECOGE' : 'DOMICILIO', hora_recoge: p.hora_recoge || '',
         estado: p.estado, forma_pago: p.forma_pago || '', paga_con: p.paga_con || '', moneda_pago: p.moneda_pago || '', paga_con_usd: p.paga_con_usd || '' };
       DV_AVISO = '';
       return pestanaDel('nuevo');
@@ -5177,7 +5182,7 @@
     const dom = !p.recoge;
     modal('<h2>✅ Aceptar D' + p.id + ' · ' + esc(p.cliente_nombre) + '</h2>' +
       '<ul style="margin:0 0 8px;padding-left:18px">' + p.lineas.map(function (l) { return '<li>' + esc(cantLinea(l)) + ' ' + esc(l.producto) + ' — ' + dinero(l.importe) + '</li>'; }).join('') + '</ul>' +
-      (dom ? '<label class="campo">Envío (C$) <small>según la zona: ' + esc(p.direccion) + '</small><input class="ent" id="dvE" inputmode="decimal" value="' + esc(p.envio || DV.envio_sugerido || '') + '"></label>' : '<p>🏠 Lo pasa a recoger' + (p.hora_recoge ? ' (' + esc(p.hora_recoge) + ')' : '') + ', sin envío.</p>') +
+      (dom ? ubiTxt(p) + '<label class="campo">Envío (C$) <small>según la zona: ' + (p.barrio ? esc(p.barrio) + ' · ' : '') + esc(p.direccion) + '</small><input class="ent" id="dvE" inputmode="decimal" value="' + esc(p.envio || DV.envio_sugerido || '') + '"></label>' : '<p>🏠 Lo pasa a recoger' + (p.hora_recoge ? ' (' + esc(p.hora_recoge) + ')' : '') + ', sin envío.</p>') +
       '<div class="totalGrande" style="margin:0 0 8px"><span>Total</span><span id="dvT"></span></div><div id="dvP"></div>' +
       '<div class="botones"><button class="boton" id="dvOk" style="flex:1">✅ Aceptar y avisar</button><button class="boton sec" onclick="cerrarModal()">Volver</button></div>');
     const calc = function () {
@@ -5231,6 +5236,7 @@
     if (!$('nvT')) return;
     DV_FORM.cliente = { telefono: $('nvT').value, nombre: $('nvN').value, direccion: $('nvD').value, referencia: $('nvR').value, ubicacion: $('nvU').value };
     DV_FORM.envio = $('nvE').value; DV_FORM.nota = $('nvO').value; DV_FORM.hora_recoge = $('nvH').value;
+    if ($('nvB')) DV_FORM.barrio = $('nvB').value.trim();
     if ($('nvPC')) DV_FORM.paga_con = $('nvPC').value;
     if ($('nvPU')) DV_FORM.paga_con_usd = $('nvPU').value.replace(/D/g, '');
   }
@@ -5247,7 +5253,10 @@
       '<label class="campo">Nombre del cliente<input class="ent" id="nvN" maxlength="60" value="' + esc(c.nombre) + '"></label></div>' +
       '<label class="campo' + (rec ? '' : ' oculto') + '" id="nvHc">¿A qué hora pasa? <small>opcional</small><input class="ent" id="nvH" maxlength="30" value="' + esc(f.hora_recoge || '') + '" placeholder="Ej.: 5 de la tarde"></label>' +
       '<div id="nvDom" class="' + (rec ? 'oculto' : '') + '">' +
-      '<label class="campo">Dirección<input class="ent" id="nvD" maxlength="160" value="' + esc(c.direccion) + '" placeholder="Barrio, de dónde, cuántas cuadras"></label>' +
+      // v0.6: barrio de la lista: al elegirlo se pone el envío de su zona (se puede cambiar a mano).
+      ((DV.barrios || []).length ? '<label class="campo">Barrio o reparto <small id="nvBi">' + barrioTxt(f.barrio) + '</small><input class="ent" id="nvB" list="nvBL" maxlength="60" autocomplete="off" value="' + esc(f.barrio || '') + '" placeholder="Escriba y elija de la lista">' +
+        '<datalist id="nvBL">' + DV.barrios.map(function (x) { return '<option value="' + esc(x.b) + '">' + dinero(x.e) + '</option>'; }).join('') + '</datalist></label>' : '') +
+      '<label class="campo">Dirección<input class="ent" id="nvD" maxlength="160" value="' + esc(c.direccion) + '" placeholder="De dónde, cuántas cuadras"></label>' +
       '<div class="grid2"><label class="campo">Señas <small>color de casa, portón…</small><input class="ent" id="nvR" maxlength="120" value="' + esc(c.referencia) + '"></label>' +
       '<label class="campo">Ubicación <small>enlace del mapa, si la mandó</small><input class="ent" id="nvU" maxlength="200" value="' + esc(c.ubicacion) + '"></label></div>' +
       '<label class="campo">Envío (C$) <small>según la zona</small><input class="ent" id="nvE" inputmode="decimal" value="' + esc(f.envio === '' ? DV.envio_sugerido : f.envio) + '"></label></div></div>' +
@@ -5269,6 +5278,11 @@
       if (x) { if (!$('nvN').value) $('nvN').value = x.nombre; if (!$('nvD').value) $('nvD').value = x.direccion; }
     };
     $('nvE').oninput = pintarCarroDel;
+    if ($('nvB')) $('nvB').oninput = function () {
+      const x = barrioDe($('nvB').value);
+      $('nvBi').innerHTML = barrioTxt($('nvB').value);
+      if (x) { $('nvE').value = x.e; pintarCarroDel(); }
+    };
     $('nvOk').onclick = guardarDel;
     $('nvEnt').querySelectorAll('button').forEach(function (b) {
       b.onclick = function () { leerFormDel(); DV_FORM.entrega = b.dataset.e; pintarNuevoDel(); };
@@ -5285,6 +5299,20 @@
     });
     pintarCarroDel();
   }
+  // v0.6: distancia de la ubicación del teléfono y aviso si no cuadra con el envío (p.ubi lo arma el servidor).
+  function ubiTxt(p) {
+    const u = p.ubi; if (!u) return '';
+    const km = String(u.km).replace('.', ',') + ' km';
+    if (u.alerta === 'fuera') return '<div class="aviso">⚠️ La ubicación que mandó queda a <b>' + km + '</b> del local: fuera de la zona de entrega. Confírmelo con el cliente.</div>';
+    if (u.alerta === 'mas') return '<div class="aviso">⚠️ La ubicación queda a <b>' + km + '</b> del local (le tocaría unos <b>' + dinero(u.envio) + '</b>), pero el envío es ' + dinero(p.envio) +
+      (p.barrio ? ' por ' + esc(p.barrio) : '') + '. Revise el barrio con el cliente.</div>';
+    return '<div><small style="color:#7a6552">📏 Ubicación a ' + km + ' del local (en línea recta)</small></div>';
+  }
+  function barrioTxt(n) {
+    if (!String(n || '').trim()) return 'el envío sale solo';
+    const x = barrioDe(n);
+    return x ? 'envío ' + dinero(x.e) : '<span style="color:#C8372D">no está en la lista: ponga el envío a mano</span>';
+  }
   function pintarCarroDel() {
     const envio = DV_FORM.entrega === 'RECOGE' ? 0 : num($('nvE') ? $('nvE').value : 0);   // lo recoge: sin envío
     pintarCarroEn('nvCarro', DV_FORM.carro, function () { leerFormDel(); pintarCarroDel(); }, envio ? '<div class="lin"><div class="nm">Envío</div><b>' + dinero(envio) + '</b></div>' : '', envio);
@@ -5297,6 +5325,7 @@
     if (!rec && !String(f.cliente.direccion || '').trim()) return tostada('Escriba la dirección (o marque "Lo recoge").', true);
     $('nvOk').disabled = true;
     llamar('guardarPedidoDelivery', { id: f.id, cliente: f.cliente, lineas: lineasDe(f.carro), envio: rec ? 0 : (f.envio === '' ? DV.envio_sugerido : f.envio), nota: f.nota, origen: f.origen,
+      barrio: rec ? '' : (barrioDe(f.barrio) ? barrioDe(f.barrio).b : f.barrio || ''),
       entrega: rec ? 'RECOGE' : 'DOMICILIO', hora_recoge: rec ? f.hora_recoge : '',
       forma_pago: f.forma_pago, paga_con: f.forma_pago === 'EFECTIVO' ? String(f.paga_con || '').trim().replace(',', '.') : '',
       moneda_pago: f.forma_pago === 'EFECTIVO' && (f.moneda_pago === 'USD' || f.moneda_pago === 'MIXTO') && DV.dolares && DV.dolares.acepta ? f.moneda_pago : '',
