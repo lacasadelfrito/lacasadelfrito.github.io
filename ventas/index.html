@@ -55,7 +55,6 @@
   }
   .tarjeta{background:var(--papel);border-radius:18px;box-shadow:var(--s2);padding:20px;width:100%;max-width:420px}
   .tarjeta h2{margin:0 0 12px;font-size:20px}
-  #pasoUsuario h2,#pasoPin h2{text-align:center}
   /* Fichas de usuario con avatar */
   .avatar{--av:52px;width:var(--av);height:var(--av);flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
     font-weight:800;font-size:calc(var(--av)*.38);color:#fff;background:var(--cafe);letter-spacing:.5px;box-shadow:inset 0 -3px 0 #0002;transition:transform var(--t)}
@@ -83,11 +82,8 @@
   .usuarios.n-muchos button .nom{flex:1}
   .usuarios.n-muchos .avatar{--av:32px}
   .usuarios.n-muchos button .ult{position:static;transform:none}
-  .buscaUsr{margin:0 0 10px!important}
   .pinCab{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:4px}
   .pinCab .avatar{--av:56px}
-  #pasoPin.solo1 .pinCab .avatar{--av:72px}
-  #pasoPin .pide{text-align:center;color:var(--gris);font-weight:700}
   .puntos{display:flex;justify-content:center;gap:12px;margin:16px 0 10px}
   .puntos i{width:16px;height:16px;border-radius:50%;border:2px solid var(--cafe);display:block;transition:background-color var(--t)}
   .puntos i.lleno{background:var(--cafe)}
@@ -100,6 +96,53 @@
   .teclado .acc{background:var(--cafe);color:#fff;font-size:18px;border-color:var(--cafe)}
   .teclado .borrar{font-size:18px}
   .error{color:var(--rojo);font-weight:700;margin-top:10px;min-height:1.4em;text-align:center}
+  /* Entrada interactiva (21/11/2026): tarjeta en relieve, etiquetas que suben, lista de nombres, ojito del PIN */
+  #entrada{--neu:#f3e6c8;--neuO:#d6c19a;--neuC:#fffaee}
+  #entrada .tarjeta.neuEnt{background:var(--neu);border-radius:26px;padding:26px 22px 20px;box-shadow:14px 14px 30px var(--neuO),-14px -14px 30px var(--neuC);animation:entraTarjeta .5s ease both}
+  @keyframes entraTarjeta{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+  .neuEnt h2{font-family:Rye,Georgia,serif;font-weight:400;font-size:26px;margin:0 0 2px;text-align:center}
+  .neuEnt .sub{margin:0 0 4px}
+  .campoFlot{position:relative;margin-top:16px;text-align:left}
+  .campoFlot input{width:100%;height:58px;padding:24px 18px 8px;border:0;border-radius:15px;background:var(--neu);font-size:17px;font-weight:700;outline:none;
+    box-shadow:inset 5px 5px 10px var(--neuO),inset -5px -5px 10px var(--neuC);transition:box-shadow .25s}
+  .campoFlot input:focus{box-shadow:inset 3px 3px 6px var(--neuO),inset -3px -3px 6px var(--neuC),var(--anillo)}
+  .campoFlot.conAvatar input{padding-left:56px}
+  .campoFlot.conFlecha input,.campoFlot.conOjo input{padding-right:54px}
+  .campoFlot label{position:absolute;left:18px;top:19px;margin:0;font-size:16px;font-weight:700;color:var(--gris);pointer-events:none;
+    transition:top .2s ease,font-size .2s ease,color .2s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 80px)}
+  .campoFlot.conAvatar label{left:56px}
+  .campoFlot input:focus+label,.campoFlot input:not(:placeholder-shown)+label,.campoFlot.lleno label{top:8px;font-size:11.5px;color:var(--naranja)}
+  .barraFoco{position:absolute;left:50%;bottom:7px;width:0;height:2px;border-radius:2px;background:var(--naranja);transition:left .3s ease,width .3s ease;pointer-events:none}
+  .campoFlot input:focus~.barraFoco{left:18px;width:calc(100% - 36px)}
+  .campoFlot>.avatar{--av:32px;position:absolute;left:14px;top:13px;font-size:12px}
+  .flechaCampo{position:absolute;right:20px;top:20px;color:var(--gris);pointer-events:none;transition:transform .2s}
+  .campoFlot.abierta .flechaCampo{transform:rotate(180deg);color:var(--naranja)}
+  .campoFlot button.ojo{position:absolute;right:8px;top:9px;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--gris);
+    display:grid;place-items:center;cursor:pointer}
+  .campoFlot button.ojo:hover{background:#fff8;color:var(--cafe)}
+  .campoFlot button.ojo .cerrado,.campoFlot button.ojo.visible .abierto{display:none}
+  .campoFlot button.ojo.visible .cerrado{display:block}
+  #pinEnt{letter-spacing:.35em;caret-color:transparent}
+  #pinEnt[type=text]{letter-spacing:.3em}
+  .listaNom{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 8px);max-height:min(300px,46vh);overflow-y:auto;padding:6px;background:var(--papel);
+    border-radius:16px;box-shadow:0 14px 34px #3b241633,0 2px 6px #3b24161a;animation:abreLista .18s ease both}
+  @keyframes abreLista{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .listaNom button{display:flex;align-items:center;gap:10px;width:100%;min-height:50px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left;cursor:pointer;font-weight:800}
+  .listaNom button .avatar{--av:34px}
+  .listaNom button .nom{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .listaNom button small{font-weight:700;color:var(--gris);font-size:11px;background:var(--crema);border-radius:10px;padding:1px 8px;white-space:nowrap}
+  .listaNom button .ult{background:var(--amarillo);color:var(--cafe);font-size:10px;font-weight:800;border-radius:10px;padding:1px 8px}
+  .listaNom button:hover,.listaNom button.marcado{background:var(--tinte)}
+  .listaNom button.marcado{box-shadow:inset 0 0 0 2px var(--naranja)}
+  .listaNom .ayuda{margin:8px}
+  .neuEnt .teclado{margin-top:18px;gap:12px}
+  .neuEnt .teclado button{border:0;background:var(--neu);box-shadow:6px 6px 12px var(--neuO),-6px -6px 12px var(--neuC);transition:box-shadow .12s,transform .12s,color .12s}
+  .neuEnt .teclado button:active,.neuEnt .teclado button.apretado{box-shadow:inset 4px 4px 9px var(--neuO),inset -4px -4px 9px var(--neuC);transform:scale(.97)}
+  .neuEnt .teclado .acc{background:var(--cafe);color:#fff;box-shadow:6px 6px 12px var(--neuO),-6px -6px 12px var(--neuC)}
+  .neuEnt .teclado .acc:active{box-shadow:inset 4px 4px 9px #0006}
+  .neuEnt .teclado.sinNombre button:not(.acc){color:#3b241666}
+  @media (max-width:520px){#entrada .tarjeta.neuEnt{padding:22px 16px 16px;border-radius:22px}.neuEnt .teclado button{height:54px}}
+  @media (prefers-reduced-motion:reduce){#entrada .tarjeta.neuEnt,.listaNom{animation:none}.barraFoco,.campoFlot label{transition:none}}
   .ayuda{color:var(--gris);font-size:13px;text-align:center;margin-top:12px}
 
   /* App */
@@ -868,19 +911,26 @@
   <div class="lema" id="lemaEntrada">Tradición que sabe a Nicaragua</div>
   </div>
   <div class="entPanel">
-  <div class="tarjeta" id="pasoUsuario">
-    <h2>¿Quién eres?</h2>
-    <div id="buscaUsrCaja"></div>
-    <div class="usuarios" id="listaUsuarios"><div class="ayuda">Cargando…</div></div>
-    <div class="ayuda" id="ayudaSinPin"></div>
-  </div>
-  <div class="tarjeta oculto" id="pasoPin">
-    <button class="volver" id="btnOtroUsr" onclick="elegirOtro()">← Cambiar de usuario</button>
-    <div class="pinCab"><span class="avatar" id="avatarPin"></span><h2 id="saludo" style="margin:0">Hola</h2></div>
-    <div class="pide">Escribe tu PIN</div>
-    <div class="puntos" id="puntosPin"></div>
-    <div class="teclado" id="teclado"></div>
+  <div class="tarjeta neuEnt" id="pasoPin">
+    <h2>¡Bienvenido!</h2>
+    <div class="ayuda sub">Elige tu nombre y escribe tu PIN.</div>
+    <div class="campoFlot conFlecha" id="cfNombre">
+      <span class="avatar oculto" id="avatarPin"></span>
+      <input id="nomEnt" placeholder=" " autocomplete="off" autocapitalize="words" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="listaUsuarios"
+        onfocus="abrirUsuarios()" onclick="abrirUsuarios()" oninput="filtrarUsuarios()" onkeydown="teclaUsuario(event)" onblur="setTimeout(cerrarUsuarios, 160)">
+      <label for="nomEnt">Tu nombre</label>
+      <span class="barraFoco"></span><svg class="flechaCampo" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      <div class="listaNom oculto" id="listaUsuarios" role="listbox" aria-label="Nombres"></div>
+    </div>
+    <div class="campoFlot conOjo" id="cfPin">
+      <input id="pinEnt" type="password" placeholder=" " inputmode="none" readonly autocomplete="off" aria-describedby="errorPin">
+      <label for="pinEnt" id="pinEtq">PIN</label>
+      <span class="barraFoco"></span>
+      <button type="button" class="ojo" id="ojoPin" onclick="verPin()" aria-label="Mostrar el PIN" title="Mostrar el PIN"><svg class="abierto" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="cerrado" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+    </div>
+    <div class="teclado sinNombre" id="teclado"></div>
     <div class="error" id="errorPin"></div>
+    <div class="ayuda" id="ayudaSinPin"></div>
   </div>
   <div class="tarjeta oculto" id="pasoNuevoPin">
     <h2>Crea tu PIN personal</h2>
@@ -1309,34 +1359,80 @@
   function htmlAvatar(u, clase) { return '<span class="avatar r-' + esc(String(u.rol || '').split(' ')[0]) + (clase ? ' ' + clase : '') + '" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span>'; }
   function pintarAvatar(el, u) { el.className = 'avatar r-' + String(u.rol || '').split(' ')[0]; el.textContent = iniciales(u.nombre); }
   let USR_ENTRADA = [], SOLO_UNO = false;
-  function fichaUsuario(u, ult) {
-    return '<button data-id="' + esc(u.id) + '">' + (ult ? '<span class="ult">Último</span>' : '') + htmlAvatar(u) +
-      '<span class="nom">' + esc(u.nombre.split(' ').slice(0, 2).join(' ')) + '</span><small>' + esc(rolVisible(u.rol)) + '</small></button>';
-  }
-  /** Pinta la lista de usuarios según cuántos son: 1 → directo al PIN; 2-4 fila; 5-8 rejilla; 9 o más lista con buscador. */
-  function pintarUsuariosEntrada(filtro) {
-    const lista = USR_ENTRADA, n = lista.length, cont = $('listaUsuarios');
-    let ultimo = '';
-    try { ultimo = localStorage.getItem(CLAVE_ULTIMO) || ''; } catch (e) {}
-    cont.dataset.n = n;
-    cont.className = 'usuarios ' + (n <= 4 ? 'n-pocos' : n <= 8 ? 'n-medio' : 'n-muchos');
-    if (!n) { cont.innerHTML = '<div class="ayuda">Todavía nadie tiene PIN. Ejecute <b>pinesIniciales</b> desde el editor de Apps Script.</div>'; return; }
+  // Lista de nombres que se abre al tocar «Tu nombre» y se filtra al escribir (flechas + Enter también sirven).
+  // sinTildes() ya existe más abajo (la usa Vender); aquí se le agrega .trim()
+  let MARCA_USR = -1;
+  function ultimoUsr() { try { return localStorage.getItem(CLAVE_ULTIMO) || ''; } catch (e) { return ''; } }
+  function usuariosQueCalzan() {
+    const ultimo = ultimoUsr(), escrito = $('nomEnt').value;
+    const q = elegido && escrito === elegido.nombre ? '' : sinTildes(escrito).trim();
     // El último que entró en este aparato sale primero.
-    const orden = lista.slice().sort(function (a, b) { return (b.id === ultimo) - (a.id === ultimo); });
-    if (n >= 9) {
-      const q = String(filtro || '').trim().toLowerCase();
-      const ver = orden.filter(function (u) { return !q || u.nombre.toLowerCase().indexOf(q) !== -1; });
-      const grupos = {};
-      const ult = ver.filter(function (u) { return u.id === ultimo; });
-      ver.forEach(function (u) { if (u.id === ultimo && !q) return; const g = rolVisible(u.rol); (grupos[g] = grupos[g] || []).push(u); });
-      cont.innerHTML = (ult.length && !q ? '<div class="grupoRol">Último</div><div class="renglones">' + fichaUsuario(ult[0], false) + '</div>' : '') +
-        Object.keys(grupos).map(function (g) {
-          return '<div class="grupoRol">' + esc(g) + '</div><div class="renglones">' + grupos[g].map(function (u) { return fichaUsuario(u, false); }).join('') + '</div>';
-        }).join('') + (ver.length ? '' : '<div class="ayuda">Nadie con ese nombre.</div>');
-    } else cont.innerHTML = orden.map(function (u) { return fichaUsuario(u, u.id === ultimo && n > 1); }).join('');
-    cont.querySelectorAll('button[data-id]').forEach(function (b) {
-      b.onclick = function () { elegir(USR_ENTRADA.filter(function (u) { return u.id === b.dataset.id; })[0]); };
-    });
+    return USR_ENTRADA.slice().sort(function (a, b) { return (b.id === ultimo) - (a.id === ultimo); })
+      .filter(function (u) { return !q || sinTildes(u.nombre).trim().indexOf(q) !== -1; });
+  }
+  function pintarUsuariosEntrada() {
+    const cont = $('listaUsuarios'), ultimo = ultimoUsr();
+    if (!USR_ENTRADA.length) {
+      cont.innerHTML = '<div class="ayuda">Todavía nadie tiene PIN. Ejecute <b>pinesIniciales</b> desde el editor de Apps Script.</div>';
+    } else {
+      const ver = usuariosQueCalzan();
+      cont.innerHTML = ver.map(function (u, k) {
+        return '<button type="button" role="option" tabindex="-1" data-id="' + esc(u.id) + '"' + (k === MARCA_USR ? ' class="marcado" aria-selected="true"' : '') + '>' +
+          htmlAvatar(u) + '<span class="nom">' + esc(u.nombre) + '</span>' + (u.id === ultimo && USR_ENTRADA.length > 1 ? '<span class="ult">Último</span>' : '') +
+          '<small>' + esc(rolVisible(u.rol)) + '</small></button>';
+      }).join('') || '<div class="ayuda">Nadie con ese nombre.</div>';
+      cont.querySelectorAll('button[data-id]').forEach(function (b) {
+        b.onmousedown = function (e) { e.preventDefault(); };   // que el campo no pierda el foco antes del toque
+        b.onclick = function () { elegir(USR_ENTRADA.filter(function (u) { return u.id === b.dataset.id; })[0]); };
+      });
+    }
+    cont.classList.remove('oculto');
+    $('cfNombre').classList.add('abierta');
+    $('nomEnt').setAttribute('aria-expanded', 'true');
+    const m = cont.querySelector('.marcado');
+    if (m) m.scrollIntoView({ block: 'nearest' });
+  }
+  function abrirUsuarios() { MARCA_USR = -1; pintarUsuariosEntrada(); }
+  function cerrarUsuarios() {
+    $('listaUsuarios').classList.add('oculto');
+    $('cfNombre').classList.remove('abierta');
+    $('nomEnt').setAttribute('aria-expanded', 'false');
+  }
+  function filtrarUsuarios() {
+    if (elegido && $('nomEnt').value !== elegido.nombre) soltarUsuario();
+    MARCA_USR = $('nomEnt').value.trim() ? 0 : -1;
+    pintarUsuariosEntrada();
+  }
+  function teclaUsuario(e) {
+    const ver = usuariosQueCalzan();
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!ver.length) return;
+      MARCA_USR = (MARCA_USR + (e.key === 'ArrowDown' ? 1 : -1) + ver.length) % ver.length;
+      pintarUsuariosEntrada();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (elegido) return $('pinEnt').focus();
+      const u = ver[MARCA_USR >= 0 ? MARCA_USR : 0];
+      if (u && (MARCA_USR >= 0 || ver.length === 1)) elegir(u);
+    } else if (e.key === 'Escape' || e.key === 'Tab') cerrarUsuarios();
+  }
+  /** Quita la persona elegida (cuando se borra o cambia el nombre escrito). */
+  function soltarUsuario() {
+    elegido = null; pin = '';
+    $('avatarPin').classList.add('oculto');
+    $('cfNombre').classList.remove('conAvatar');
+    $('pinEtq').textContent = 'PIN';
+    $('teclado').classList.add('sinNombre');
+    dibujarPuntos();
+  }
+  /** Ojito: muestra u oculta los números del PIN. */
+  function verPin() {
+    const c = $('pinEnt'), ver = c.type === 'password';
+    c.type = ver ? 'text' : 'password';
+    $('ojoPin').classList.toggle('visible', ver);
+    $('ojoPin').setAttribute('aria-label', ver ? 'Ocultar el PIN' : 'Mostrar el PIN');
+    $('ojoPin').title = $('ojoPin').getAttribute('aria-label');
   }
   function mostrarEntrada() {
     document.body.classList.remove('mnAbierto');
@@ -1349,13 +1445,12 @@
       r.usuarios = r.usuarios.filter(usuarioDeEstaPuerta);
       USR_ENTRADA = r.usuarios.map(function (u) { return { id: u.id, nombre: u.nombre, rol: u.rol }; });
       SOLO_UNO = USR_ENTRADA.length === 1;
-      $('buscaUsrCaja').innerHTML = USR_ENTRADA.length >= 9 ? '<input class="ent buscaUsr" id="buscaUsr" placeholder="Busca tu nombre" autocomplete="off" aria-label="Busca tu nombre">' : '';
-      if ($('buscaUsr')) $('buscaUsr').oninput = function () { pintarUsuariosEntrada($('buscaUsr').value); };
-      pintarUsuariosEntrada('');
+      if (!USR_ENTRADA.length) pintarUsuariosEntrada();
+      else if (document.activeElement === $('nomEnt')) pintarUsuariosEntrada();
       $('ayudaSinPin').textContent = r.sinPin ? '¿No apareces? Pide a la administración que te asigne un PIN.' : '';
       // Con una sola persona no se pregunta "¿Quién eres?": va directo al PIN.
       if (SOLO_UNO) elegir(USR_ENTRADA[0]);
-    }).catch(function (e) { $('listaUsuarios').innerHTML = '<div class="error">' + esc(e.message || e) + '</div>'; });
+    }).catch(function (e) { $('errorPin').textContent = String(e.message || e).replace(/^Error:\s*/, ''); });
   }
 
   function armarTeclado() {
@@ -1367,36 +1462,37 @@
     }).join('');
     $('teclado').querySelectorAll('button').forEach(function (b) { b.onclick = function () { tecla(b.dataset.k); }; });
   }
-  let PUNTOS_ANTES = 0;
+  /** El campo PIN muestra lo escrito (puntos, o números con el ojito). */
   function dibujarPuntos() {
-    const largo = elegido && (elegido.rol === 'Admin' || elegido.rol === 'Superadmin') ? 6 : Math.max(4, pin.length);
-    let h = '';
-    for (let i = 0; i < Math.min(6, Math.max(largo, pin.length)); i++)
-      h += '<i class="' + (i < pin.length ? 'lleno' : '') + (i === pin.length - 1 && pin.length > PUNTOS_ANTES ? ' nuevo' : '') + '"></i>';
-    PUNTOS_ANTES = pin.length;
-    $('puntosPin').innerHTML = h;
+    $('pinEnt').value = pin;
+    $('cfPin').classList.toggle('lleno', !!pin);
   }
   function elegir(u) {
     elegido = u; pin = '';
-    $('saludo').textContent = 'Hola, ' + u.nombre.split(' ')[0];
+    $('nomEnt').value = u.nombre;
+    cerrarUsuarios();
     pintarAvatar($('avatarPin'), u);
+    $('avatarPin').classList.remove('oculto');
+    $('cfNombre').classList.add('conAvatar');
+    $('pinEtq').textContent = 'PIN de ' + u.nombre.split(' ')[0];
+    $('teclado').classList.remove('sinNombre');
     $('errorPin').textContent = '';
-    $('pasoPin').classList.toggle('solo1', SOLO_UNO);
-    $('btnOtroUsr').classList.toggle('oculto', SOLO_UNO);
-    $('pasoUsuario').classList.add('oculto');
     $('pasoPin').classList.remove('oculto');
     dibujarPuntos();
+    $('pinEnt').focus();
   }
   function elegirOtro() {
-    elegido = null; pin = '';
-    $('pasoPin').classList.add('oculto');
+    $('nomEnt').value = '';
+    soltarUsuario();
+    cerrarUsuarios();
+    if ($('pinEnt').type !== 'password') verPin();
+    $('errorPin').textContent = '';
     $('pasoNuevoPin').classList.add('oculto');
-    $('pasoUsuario').classList.remove('oculto');
-    if ($('buscaUsr') && $('buscaUsr').value) { $('buscaUsr').value = ''; pintarUsuariosEntrada(''); }
+    $('pasoPin').classList.remove('oculto');
   }
   function sacudir(el) { el.classList.remove('sacudir'); void el.offsetWidth; el.classList.add('sacudir'); setTimeout(function () { el.classList.remove('sacudir'); }, 320); }
   function tecla(k) {
-    if (!elegido) return;
+    if (!elegido) { $('errorPin').textContent = 'Primero elige tu nombre.'; sacudir($('cfNombre')); $('nomEnt').focus(); return; }
     $('errorPin').textContent = '';
     if (k === 'b') pin = pin.slice(0, -1);
     else if (k === 'ok') return entrar();
@@ -1406,13 +1502,15 @@
     if (admin && pin.length === 6) entrar();
   }
   document.addEventListener('keydown', function (e) {
-    if ($('pasoPin').classList.contains('oculto')) return;
+    if ($('pasoPin').classList.contains('oculto') || $('entrada').classList.contains('oculto')) return;
+    if (e.target && e.target.id === 'nomEnt') return;   // escribiendo el nombre: no va al PIN
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (/^\d$/.test(e.key)) tecla(e.key);
     else if (e.key === 'Backspace') tecla('b');
     else if (e.key === 'Enter') tecla('ok');
   });
   function entrar() {
-    if (pin.length < 4) { $('errorPin').textContent = 'El PIN tiene por lo menos 4 números.'; sacudir($('pasoPin')); return; }
+    if (pin.length < 4) { $('errorPin').textContent = 'El PIN tiene por lo menos 4 números.'; sacudir($('cfPin')); return; }
     const p = pin; pin = ''; dibujarPuntos();
     const quien = elegido.id;
     servidor('iniciarSesion', [elegido.id, p]).then(function (r) {
@@ -1420,7 +1518,7 @@
       try { localStorage.setItem(CLAVE_ULTIMO, quien); } catch (e) {}
       PIN_ACTUAL = p;
       if (r.cambiar_pin) pedirPinNuevo(r.inicio); else abrirApp(r.inicio);
-    }).catch(function (e) { $('errorPin').textContent = String(e.message || e).replace(/^Error:\s*/, ''); sacudir($('pasoPin')); });
+    }).catch(function (e) { $('errorPin').textContent = String(e.message || e).replace(/^Error:\s*/, ''); sacudir($('cfPin')); });
   }
 
   let PIN_ACTUAL = '', INICIO_PEND = null;
